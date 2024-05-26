@@ -133,7 +133,6 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         logging.info(f"Cancel button clicked with callback data: {query.data}")
         
-        # Ensure the callback data is properly formatted
         if '|' in query.data:
             action, reference = query.data.split('|', 1)
             if action == 'cancel' and reference:
@@ -166,16 +165,13 @@ if __name__ == '__main__':
     # Create database tables if they do not exist
     create_tables()
 
-    # Set up the bot application
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handlers
     start_handler = CommandHandler('start', start)
     plans_handler = CallbackQueryHandler(select_plan, pattern='^1 Month$|^3 Months$|^1 Year$')
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern='^cancel\\|')
     message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     
-    # Add handlers to the application
     application.add_handler(start_handler)
     application.add_handler(plans_handler)
     application.add_handler(cancel_handler)
