@@ -27,10 +27,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
-# Initialize Telegram Bot instance
+
 bot_instance = Bot(token=BOT_TOKEN)
 
-# Helper functions
 def calculate_end_date(subscription_type):
     current_date = datetime.datetime.now()
     if subscription_type == '1 Month':
@@ -89,13 +88,11 @@ def paystack_webhook():
             end_date = calculate_end_date(subscription_type)
             
             if payment_reference:
-                # Verify payment
                 payment_verification = verify_payment(payment_reference)
                 if payment_verification.get('status'):
-                    # Update payment session status
                     update_payment_session_status(payment_reference, 'success')
                     
-                    # Add subscription details to the database
+                    # Add subscription to database
                     add_subscription(
                         chat_id=telegram_chat_id,
                         username=username,
@@ -106,13 +103,12 @@ def paystack_webhook():
                         group_id=TELEGRAM_GROUP_ID
                     )
                     
-                    # Generate temporary invite link
+                    # temporary invite link
                     invite_link = asyncio.run(create_temporary_invite_link(bot_instance, TELEGRAM_GROUP_ID))
                     
-                    # Format the amount to be displayed as a whole number
                     amount_in_naira = amount // 100
                     
-                    # Send notification with invite link
+                    # notification with invite link
                     asyncio.run(send_notification(bot_instance, telegram_chat_id, f"Your subscription of {amount_in_naira} NGN for {subscription_type} was successful. Here is your invite link to join the Signal group: {invite_link}"))
                     
                     logger.info('Payment received - Reference: %s, Amount: %s %s', payment_reference, amount_in_naira, currency)
