@@ -241,8 +241,4 @@ if __name__ == "__main__":
     )  # Check every 5 seconds for testing
 
     # Run the bot
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url="https://bot-subscription.herokuapp.com/",
-    )
+    application.run_webhook()
