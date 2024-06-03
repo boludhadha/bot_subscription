@@ -240,4 +240,4 @@ if __name__ == "__main__":
     )  # Check every 5 seconds for testing
 
     # Run the bot
-    application.run_webhook()
+    application.run_polling()

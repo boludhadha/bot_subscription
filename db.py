@@ -6,16 +6,19 @@ import datetime
 
 load_dotenv()
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
+
 def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
-    
-    cursor.execute("""
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS payment_sessions (
             id SERIAL PRIMARY KEY,
             user_id BIGINT NOT NULL,
@@ -23,9 +26,11 @@ def create_tables():
             status TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
-    
-    cursor.execute("""
+    """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS subscriptions (
             id SERIAL PRIMARY KEY,
             telegram_chat_id BIGINT UNIQUE NOT NULL,
@@ -36,15 +41,26 @@ def create_tables():
             payment_reference TEXT,
             group_id TEXT
         )
-    """)
-    
+    """
+    )
+
     conn.commit()
     conn.close()
 
-def add_subscription(chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id):
+
+def add_subscription(
+    chat_id,
+    username,
+    subscription_type,
+    start_date,
+    end_date,
+    payment_reference,
+    group_id,
+):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (telegram_chat_id) DO UPDATE
@@ -54,60 +70,89 @@ def add_subscription(chat_id, username, subscription_type, start_date, end_date,
             end_date = EXCLUDED.end_date,
             payment_reference = EXCLUDED.payment_reference,
             group_id = EXCLUDED.group_id
-    """, (chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id))
+    """,
+        (
+            chat_id,
+            username,
+            subscription_type,
+            start_date,
+            end_date,
+            payment_reference,
+            group_id,
+        ),
+    )
     conn.commit()
     conn.close()
 
-def add_payment_session(user_id, payment_reference, status='pending'):
+
+def add_payment_session(user_id, payment_reference, status="pending"):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO payment_sessions (user_id, payment_reference, status)
         VALUES (%s, %s, %s)
         ON CONFLICT (payment_reference) DO UPDATE
         SET status = EXCLUDED.status
-    """, (user_id, payment_reference, status))
+    """,
+        (user_id, payment_reference, status),
+    )
     conn.commit()
     conn.close()
+
 
 def update_payment_session_status(payment_reference, status):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         UPDATE payment_sessions
         SET status = %s
         WHERE payment_reference = %s
-    """, (status, payment_reference))
+    """,
+        (status, payment_reference),
+    )
     conn.commit()
     conn.close()
+
 
 def get_payment_session(payment_reference):
     conn = get_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT * FROM payment_sessions
         WHERE payment_reference = %s
-    """, (payment_reference,))
+    """,
+        (payment_reference,),
+    )
     payment_session = cursor.fetchone()
     conn.close()
     return payment_session
 
+
 def get_expired_subscriptions():
     conn = get_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT * FROM subscriptions
         WHERE end_date < CURRENT_TIMESTAMP
-    """)
+    """
+    )
     expired_subscriptions = cursor.fetchall()
     conn.close()
     return expired_subscriptions
 
+
 def remove_subscription(chat_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         DELETE FROM subscriptions WHERE telegram_chat_id = %s
-    """, (chat_id,))
+    """,
+        (chat_id,),
+    )
     conn.commit()
     conn.close()
