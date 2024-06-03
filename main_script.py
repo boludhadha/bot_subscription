@@ -245,5 +245,5 @@ if __name__ == "__main__":
         listen="0.0.0.0",
         port=PORT,
         url_path=BOT_TOKEN,
-        webhook_url="https://bot-subscription.herokuapp.com/" + BOT_TOKEN,
+        webhook_url="https://bot-subscription-ca5060501cc0.herokuapp.com/" + BOT_TOKEN,
     )
