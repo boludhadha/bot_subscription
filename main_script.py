@@ -38,6 +38,7 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
+PORT = int(os.environ.get("PORT", "8443"))
 
 subscription_plans = {
     "1 Month": {"duration": datetime.timedelta(days=30), "price": 5000},
@@ -240,4 +241,8 @@ if __name__ == "__main__":
     )  # Check every 5 seconds for testing
 
     # Run the bot
-    application.run_polling()
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        webhook_url="https://bot-subscription.herokuapp.com/",
+    )
