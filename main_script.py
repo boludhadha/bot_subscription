@@ -81,7 +81,8 @@ def initiate_payment(
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        keyboard = [["Join Signal Group"], ["Mentorship"], ["Subscription Status"]]
+        keyboard = [["Join Signal Group"], [
+            "Mentorship"], ["Subscription Status"]]
 
         reply_markup = ReplyKeyboardMarkup(
             keyboard,
@@ -101,7 +102,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("1 Month: 5000 NGN", callback_data="1 Month")],
-        [InlineKeyboardButton("3 Months: 12000 NGN", callback_data="3 Months")],
+        [InlineKeyboardButton("3 Months: 12000 NGN",
+                              callback_data="3 Months")],
         [InlineKeyboardButton("1 Year: 45000 NGN", callback_data="1 Year")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -135,7 +137,8 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             payment_url = payment_response["data"]["authorization_url"]
             keyboard = [
                 [InlineKeyboardButton("Pay Now", url=payment_url)],
-                [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
+                [InlineKeyboardButton(
+                    "Cancel", callback_data=f"cancel|{reference}")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
@@ -174,7 +177,8 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "|" in query.data:
             action, reference = query.data.split("|", 1)
             if action == "cancel" and reference:
-                logging.info(f"Processing cancel action for reference: {reference}")
+                logging.info(
+                    f"Processing cancel action for reference: {reference}")
                 # Update payment session status to 'cancelled'
                 update_payment_session_status(reference, "cancelled")
                 await query.edit_message_text(text="Payment process has been canceled.")
@@ -223,11 +227,13 @@ if __name__ == "__main__":
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     start_handler = CommandHandler("start", start)
+    start_handler = CommandHandler("plans", plans)
     plans_handler = CallbackQueryHandler(
         select_plan, pattern="^1 Month$|^3 Months$|^1 Year$"
     )
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern="^cancel\\|")
-    message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
+    message_handler = MessageHandler(
+        filters.TEXT & ~filters.COMMAND, handle_message)
 
     application.add_handler(start_handler)
     application.add_handler(plans_handler)
@@ -241,9 +247,4 @@ if __name__ == "__main__":
     )  # Check every 5 seconds for testing
 
     # Run the bot
-    application.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=BOT_TOKEN,
-        webhook_url="https://bot-subscription-ca5060501cc0.herokuapp.com/" + BOT_TOKEN,
-    )
+    application.run_polling()
