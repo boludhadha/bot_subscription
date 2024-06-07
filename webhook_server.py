@@ -6,6 +6,7 @@ import datetime
 import asyncio
 import logging
 import os
+import pytz
 import requests
 from logging import StreamHandler
 from flask import Flask, request, Request, abort
@@ -87,6 +88,7 @@ def verify_paystack_webhook(request_body, signature):
     ).hexdigest()
     return hash == signature
 
+local_tz = pytz.timezone('Africa/Lagos')
 
 @app.route("/webhook/paystack", methods=["POST"])
 def paystack_webhook():
@@ -115,7 +117,7 @@ def paystack_webhook():
             telegram_chat_id = metadata.get("telegram_chat_id")
             username = metadata.get("username")
             subscription_type = metadata.get("subscription_type")
-            start_date = datetime.datetime.now()
+            start_date = datetime.datetime.now(local_tz)
             end_date = calculate_end_date(subscription_type)
 
             if payment_reference:
