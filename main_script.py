@@ -81,6 +81,8 @@ def initiate_payment(
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return
     try:
         keyboard = [["Join Private Group"], ["Subscription Status"]]
 
@@ -100,6 +102,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return
     keyboard = [
         [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
         [InlineKeyboardButton("30 minutes: 25,000 NGN",callback_data="30 Minutes")],
@@ -158,6 +162,8 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type != "private":
+        return
     user_message = update.message.text
 
     if user_message == "Join Private Group":
