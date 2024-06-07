@@ -41,7 +41,7 @@ bot_instance = Bot(token=BOT_TOKEN)
 def calculate_end_date(subscription_type):
     current_date = datetime.datetime.now(local_tz)
     if subscription_type == "15 Minutes":
-        return current_date + datetime.timedelta(minutes=15)
+        return current_date + datetime.timedelta(minutes=2)
     elif subscription_type == "30 Minutes":
         return current_date + datetime.timedelta(minutes=30)
     elif subscription_type == "1 Hour":
