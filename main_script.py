@@ -87,7 +87,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = ReplyKeyboardMarkup(
             keyboard,
             resize_keyboard=True,
-            input_field_placeholder="Select an option below to continue👇🏽",
+            input_field_placeholder="an option below to continue👇🏽",
         )
 
         await context.bot.send_message(
