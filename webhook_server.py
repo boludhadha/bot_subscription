@@ -40,11 +40,11 @@ bot_instance = Bot(token=BOT_TOKEN)
 def calculate_end_date(subscription_type):
     current_date = datetime.datetime.now()
     if subscription_type == "1 Month":
-        return current_date + datetime.timedelta(minutes=5)
+        return current_date + datetime.timedelta(minutes=15)
     elif subscription_type == "3 Months":
-        return current_date + datetime.timedelta(minutes=5)
+        return current_date + datetime.timedelta(minutes=30)
     elif subscription_type == "1 Year":
-        return current_date + datetime.timedelta(minutes=5)
+        return current_date + datetime.timedelta(minutes=60)
     return None
 
 
@@ -146,7 +146,7 @@ def paystack_webhook():
                         send_notification(
                             bot_instance,
                             telegram_chat_id,
-                            f"Your subscription of {amount_in_naira} NGN for {subscription_type} was successful. Here is your invite link to join the Signal group: {invite_link}",
+                            f"Your subscription of {amount_in_naira} NGN for {subscription_type} was successful. Here is your invite link to join the group: {invite_link}",
                         )
                     )
 
