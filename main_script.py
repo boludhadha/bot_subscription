@@ -226,13 +226,16 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
 async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    chat_id = query.data.split("|")[1]
 
-    await plans(update, context)
-
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text="Please choose a subscription plan to renew your membership.",
+    # Display the subscription plans
+    keyboard = [
+        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
+        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text="Choose a subscription plan:", reply_markup=reply_markup
     )
 
 if __name__ == "__main__":
