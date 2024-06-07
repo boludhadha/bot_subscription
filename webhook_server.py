@@ -39,7 +39,7 @@ bot_instance = Bot(token=BOT_TOKEN)
 
 
 def calculate_end_date(subscription_type):
-    current_date = datetime.datetime.now(local_tz)
+    current_date = datetime.datetime.now()
     if subscription_type == "15 Minutes":
         return current_date + datetime.timedelta(minutes=2)
     elif subscription_type == "30 Minutes":
@@ -66,19 +66,17 @@ def verify_payment(payment_reference):
     return response.json()
 
 
-async def create_temporary_invite_link(
-    bot, chat_id, expire_seconds=14400, member_limit=1
-):
+async def generate_invite_link(context, chat_id):
     try:
-        expire_date = datetime.datetime.now() + datetime.timedelta(
-            seconds=expire_seconds
-        )
-        invite_link = await bot.create_chat_invite_link(
-            chat_id=chat_id, expire_date=expire_date, member_limit=member_limit
+        # Generate a new invite link with expiration and member limit
+        invite_link = await context.bot.create_chat_invite_link(
+            chat_id=chat_id,
+            expire_date=datetime.datetime.now() + datetime.timedelta(hours=1),
+            member_limit=1
         )
         return invite_link.invite_link
     except Exception as e:
-        logging.error(f"Error creating invite link: {e}")
+        logging.error(f"Error generating invite link: {e}")
         return None
 
 
@@ -87,8 +85,6 @@ def verify_paystack_webhook(request_body, signature):
         PAYSTACK_SECRET_KEY.encode(), request_body, hashlib.sha512
     ).hexdigest()
     return hash == signature
-
-local_tz = pytz.timezone('Africa/Lagos')
 
 @app.route("/webhook/paystack", methods=["POST"])
 def paystack_webhook():
@@ -117,7 +113,7 @@ def paystack_webhook():
             telegram_chat_id = metadata.get("telegram_chat_id")
             username = metadata.get("username")
             subscription_type = metadata.get("subscription_type")
-            start_date = datetime.datetime.now(local_tz)
+            start_date = datetime.datetime.now()
             end_date = calculate_end_date(subscription_type)
 
             if payment_reference:
@@ -138,7 +134,7 @@ def paystack_webhook():
 
                     # temporary invite link
                     invite_link = asyncio.run(
-                        create_temporary_invite_link(bot_instance, TELEGRAM_GROUP_ID)
+                        generate_invite_link(bot_instance, TELEGRAM_GROUP_ID)
                     )
 
                     amount_in_naira = amount // 100
