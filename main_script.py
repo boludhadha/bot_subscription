@@ -142,8 +142,8 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
                  f"You selected the {selected_plan} plan.\n\n"
-                f"Note that this is not a recurring subscription but rather a one-time payment, therefore {selected_plan} you would be removed from the group.\n\n"
-                "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽",
+                f"Note that this is not a recurring subscription but rather a one-time payment, therefore after {selected_plan} you would be removed from the group.\n\n"
+                "Proceed to payment by clicking the button link below👇🏽",
                 reply_markup=reply_markup,
             )
         else:
@@ -201,15 +201,18 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="Failed to cancel payment. Please try again later."
         )
 
-
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
     for subscription in expired_subscriptions:
         telegram_chat_id = subscription["telegram_chat_id"]
-        # Notify user about subscription expiration
+        keyboard = [
+            [InlineKeyboardButton("Renew", callback_data=f"renew|{telegram_chat_id}")],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         await bot_instance.send_message(
             chat_id=telegram_chat_id,
-            text="Your subscription has expired. You have been removed from the group.",
+            text="Your subscription has expired and you have been removed from the group. Renew your subscription to join again.",
+            reply_markup=reply_markup
         )
         # Remove user from the group
         await bot_instance.ban_chat_member(
@@ -220,6 +223,17 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
 
+async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    chat_id = query.data.split("|")[1]
+
+    await plans(update, context)
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text="Please choose a subscription plan to renew your membership.",
+    )
 
 if __name__ == "__main__":
     # Create database tables if they do not exist
@@ -235,14 +249,15 @@ if __name__ == "__main__":
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern="^cancel\\|")
     message_handler = MessageHandler(
         filters.TEXT & ~filters.COMMAND, handle_message)
+    renew_handler = CallbackQueryHandler(handle_renew, pattern="^renew\\|")
 
     application.add_handler(start_handler)
     application.add_handler(plans_handler)
     application.add_handler(select_plan_handler)
     application.add_handler(cancel_handler)
     application.add_handler(message_handler)
+    application.add_handler(renew_handler)
 
-    # Periodically check for expired subscriptions
     job_queue = application.job_queue
     job_queue.run_repeating(
         check_subscription_expiry, interval=datetime.timedelta(seconds=200), first=0
