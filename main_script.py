@@ -100,9 +100,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="1 Month")],
-        [InlineKeyboardButton("30 minutes: 25,000 NGN",callback_data="3 Months")],
-        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Year")],
+        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN",callback_data="30 Minutes")],
+        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -140,9 +140,9 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
-                f"You selected the {selected_plan} plan.\n"
-    "Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}.\n\n"
-    "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽",
+                 f"You selected the {selected_plan} plan.\n\n"
+                f"Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}.\n\n"
+                "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽"
                 reply_markup=reply_markup,
             )
         else:
