@@ -142,7 +142,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(
                  f"You selected the {selected_plan} plan.\n\n"
                 f"Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}.\n\n"
-                "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽"
+                "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽",
                 reply_markup=reply_markup,
             )
         else:
