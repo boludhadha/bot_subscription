@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+import pytz
 import datetime
 import requests
 from telegram import (
@@ -141,7 +142,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
                  f"You selected the {selected_plan} plan.\n\n"
-                f"Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}.\n\n"
+                f"Note that this is not a recurring subscription but rather a one-time payment, therefore {selected_plan} you would be removed from the group.\n\n"
                 "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽",
                 reply_markup=reply_markup,
             )
@@ -208,7 +209,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         # Notify user about subscription expiration
         await bot_instance.send_message(
             chat_id=telegram_chat_id,
-            text="Your subscription has expired. You will be removed from the group.",
+            text="Your subscription has expired. You have been removed from the group.",
         )
         # Remove user from the group
         await bot_instance.ban_chat_member(
