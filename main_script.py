@@ -41,7 +41,7 @@ TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
 PORT = int(os.environ.get("PORT", "8443"))
 
 subscription_plans = {
-    "15 Minutes": {"duration": datetime.timedelta(minutes=15), "price": 1500},
+    "15 Minutes": {"duration": datetime.timedelta(minutes=15), "price": 15000},
     "30 Minutes": {"duration": datetime.timedelta(minutes=30), "price": 25000},
     "1 Hour": {"duration": datetime.timedelta(minutes=60), "price": 95000},
 }
