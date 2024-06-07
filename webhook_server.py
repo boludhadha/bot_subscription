@@ -146,7 +146,7 @@ def paystack_webhook():
                         send_notification(
                             bot_instance,
                             telegram_chat_id,
-                            f"Your subscription of {amount_in_naira} NGN for {subscription_type} was successful. Here is your invite link to join the group: {invite_link}",
+                            f"Your subscription of {amount_in_naira} NGN for {subscription_type} was successful, it starts at {start_date}  and ends on {end_date}. Here is your invite link to join the group: {invite_link}",
                         )
                     )
 
