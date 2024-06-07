@@ -81,18 +81,17 @@ def initiate_payment(
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        keyboard = [["Join Signal Group"], [
-            "Mentorship"], ["Subscription Status"]]
+        keyboard = [["Join Private Group"], ["Subscription Status"]]
 
         reply_markup = ReplyKeyboardMarkup(
             keyboard,
             resize_keyboard=True,
-            input_field_placeholder="an option below to continue👇🏽",
+            input_field_placeholder="Select an option below to interact with the bot",
         )
 
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="Welcome, what would you like to do today at Only 1 Chuks sniper gang?",
+            text="Welcome, please click on the 'Join private group' button below",
             reply_markup=reply_markup,
         )
     except Exception as e:
@@ -101,10 +100,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("1 Month: 5000 NGN", callback_data="1 Month")],
-        [InlineKeyboardButton("3 Months: 12000 NGN",
-                              callback_data="3 Months")],
-        [InlineKeyboardButton("1 Year: 45000 NGN", callback_data="1 Year")],
+        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="1 Month")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN",callback_data="3 Months")],
+        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Year")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
@@ -136,13 +134,15 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             payment_url = payment_response["data"]["authorization_url"]
             keyboard = [
-                [InlineKeyboardButton("Pay Now", url=payment_url)],
+                [InlineKeyboardButton("Paystack Payment Page", url=payment_url)],
                 [InlineKeyboardButton(
                     "Cancel", callback_data=f"cancel|{reference}")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
-                text=f"You selected the {selected_plan} plan. Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}. Proceed to payment to join the 01C gang:",
+                f"You selected the {selected_plan} plan.\n"
+    "Note that this is not a recurring subscription but rather a one-time payment for only {selected_plan}.\n\n"
+    "Proceed to payment by clicking the link below to redirect you to the Paystack payment page 👇🏽",
                 reply_markup=reply_markup,
             )
         else:
@@ -159,7 +159,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
-    if user_message == "Join Signal Group":
+    if user_message == "Join Private Group":
         await plans(update, context)
     else:
         await context.bot.send_message(
@@ -245,7 +245,6 @@ if __name__ == "__main__":
     job_queue = application.job_queue
     job_queue.run_repeating(
         check_subscription_expiry, interval=datetime.timedelta(seconds=200), first=0
-    )  # Check every 5 seconds for testing
+    )  
 
-    # Run the bot
     application.run_polling()
