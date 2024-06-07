@@ -41,9 +41,9 @@ TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
 PORT = int(os.environ.get("PORT", "8443"))
 
 subscription_plans = {
-    "1 Month": {"duration": datetime.timedelta(days=30), "price": 5000},
-    "3 Months": {"duration": datetime.timedelta(days=90), "price": 12000},
-    "1 Year": {"duration": datetime.timedelta(days=365), "price": 45000},
+    "15 Minutes": {"duration": datetime.timedelta(minutes=15), "price": 1500},
+    "30 Minutes": {"duration": datetime.timedelta(minutes=30), "price": 25000},
+    "1 Hour": {"duration": datetime.timedelta(minutes=60), "price": 95000},
 }
 
 bot_instance = Bot(token=BOT_TOKEN)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     start_handler = CommandHandler("start", start)
     plans_handler = CommandHandler("plans", plans)
     select_plan_handler = CallbackQueryHandler(
-        select_plan, pattern="^1 Month$|^3 Months$|^1 Year$"
+        select_plan, pattern="^15 Minutes$|^30 Minutes$|^1 Hour$"
     )
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern="^cancel\\|")
     message_handler = MessageHandler(
