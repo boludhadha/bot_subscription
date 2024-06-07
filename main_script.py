@@ -119,7 +119,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if selected_plan in subscription_plans:
         subscription_details = subscription_plans[selected_plan]
         username = query.from_user.username
-        email = username + "@example.com"
+        email = "dboluwatife928@gmail.com"
         reference = generate_unique_reference()
         telegram_chat_id = query.from_user.id
         amount = subscription_details["price"]
