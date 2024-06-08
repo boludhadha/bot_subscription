@@ -66,17 +66,19 @@ def verify_payment(payment_reference):
     return response.json()
 
 
-async def generate_invite_link(context, chat_id):
+async def create_temporary_invite_link(
+    bot, chat_id, minutes_expire=60, member_limit=1
+):
     try:
-        # Generate a new invite link with expiration and member limit
-        invite_link = await context.bot.create_chat_invite_link(
-            chat_id=chat_id,
-            expire_date=datetime.datetime.now() + datetime.timedelta(hours=1),
-            member_limit=1
+        expire_date = datetime.datetime.now() + datetime.timedelta(
+            minutes=minutes_expire
+        )
+        invite_link = await bot.create_chat_invite_link(
+            chat_id=chat_id, expire_date=expire_date, member_limit=member_limit
         )
         return invite_link.invite_link
     except Exception as e:
-        logging.error(f"Error generating invite link: {e}")
+        logging.error(f"Error creating invite link: {e}")
         return None
 
 
@@ -134,7 +136,7 @@ def paystack_webhook():
 
                     # temporary invite link
                     invite_link = asyncio.run(
-                        generate_invite_link(bot_instance, TELEGRAM_GROUP_ID)
+                        create_temporary_invite_link(bot_instance, TELEGRAM_GROUP_ID)
                     )
 
                     amount_in_naira = amount // 100
