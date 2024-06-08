@@ -3,6 +3,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import datetime
+import logging
 
 load_dotenv()
 
@@ -17,35 +18,38 @@ def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(
+    try:
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS payment_sessions (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                payment_reference TEXT UNIQUE NOT NULL,
+                status TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         """
-        CREATE TABLE IF NOT EXISTS payment_sessions (
-            id SERIAL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            payment_reference TEXT UNIQUE NOT NULL,
-            status TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """
-    )
-
-    cursor.execute(
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id SERIAL PRIMARY KEY,
+                telegram_chat_id BIGINT UNIQUE NOT NULL,
+                username TEXT,
+                subscription_type TEXT,
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
+                payment_reference TEXT,
+                group_id TEXT
+            )
         """
-        CREATE TABLE IF NOT EXISTS subscriptions (
-            id SERIAL PRIMARY KEY,
-            telegram_chat_id BIGINT UNIQUE NOT NULL,
-            username TEXT,
-            subscription_type TEXT,
-            start_date TIMESTAMP,
-            end_date TIMESTAMP,
-            payment_reference TEXT,
-            group_id TEXT
         )
-    """
-    )
-
-    conn.commit()
-    conn.close()
+        conn.commit()
+        logging.info("Tables created successfully or already exist.")
+    except Exception as e:
+        logging.error(f"Error creating tables: {e}")
+    finally:
+        conn.close()
 
 
 def add_subscription(
