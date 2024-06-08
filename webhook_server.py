@@ -67,7 +67,7 @@ def verify_payment(payment_reference):
 
 
 async def create_temporary_invite_link(
-    bot, chat_id, minutes_expire=60, member_limit=1
+    bot, chat_id, minutes_expire=5, member_limit=1
 ):
     try:
         expire_date = datetime.datetime.now() + datetime.timedelta(
