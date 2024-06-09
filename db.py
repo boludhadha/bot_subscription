@@ -135,6 +135,22 @@ def get_payment_session(payment_reference):
     return payment_session
 
 
+def get_user_subscription(chat_id):
+    conn = get_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        """
+        SELECT * FROM subscriptions
+        WHERE telegram_chat_id = %s
+    """,
+        (chat_id,),
+    )
+    subscription = cursor.fetchall()
+    conn.close()
+
+    return subscription
+
+
 def get_expired_subscriptions():
     conn = get_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)

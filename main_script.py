@@ -21,9 +21,9 @@ from telegram.ext import (
 )
 from db import (
     create_tables,
-    add_subscription,
     add_payment_session,
     get_expired_subscriptions,
+    get_user_subscription,
     remove_subscription,
     update_payment_session_status,
 )
@@ -106,7 +106,7 @@ async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     keyboard = [
         [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
-        [InlineKeyboardButton("30 minutes: 25,000 NGN",callback_data="30 Minutes")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
         [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -140,12 +140,11 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             payment_url = payment_response["data"]["authorization_url"]
             keyboard = [
                 [InlineKeyboardButton("Paystack Payment Page", url=payment_url)],
-                [InlineKeyboardButton(
-                    "Cancel", callback_data=f"cancel|{reference}")],
+                [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text(
-                 f"You selected the {selected_plan} plan.\n\n"
+                f"You selected the {selected_plan} plan.\n\n"
                 f"Note that this is not a recurring subscription but rather a one-time payment, therefore after {selected_plan} you would be removed from the group.\n\n"
                 "Proceed to payment by clicking the button link below👇🏽",
                 reply_markup=reply_markup,
@@ -168,6 +167,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user_message == "Join Private Group":
         await plans(update, context)
+    elif user_message == "Subscription Status":
+        await check_subscription_status(update, context)
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -184,8 +185,7 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "|" in query.data:
             action, reference = query.data.split("|", 1)
             if action == "cancel" and reference:
-                logging.info(
-                    f"Processing cancel action for reference: {reference}")
+                logging.info(f"Processing cancel action for reference: {reference}")
                 # Update payment session status to 'cancelled'
                 update_payment_session_status(reference, "cancelled")
                 await query.edit_message_text(text="Payment process has been canceled.")
@@ -207,6 +207,18 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="Failed to cancel payment. Please try again later."
         )
 
+
+async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    subscription = get_user_subscription(update.effective_chat.id)
+
+    if len(subscription) == 0:
+        await update.message.reply_text("You do not have an active subscription")
+    else:
+        await update.message.reply_text(
+            f"Your subscription expires on: {subscription[-1]['end_date']}"
+        )
+
+
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
     for subscription in expired_subscriptions:
@@ -218,7 +230,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         await bot_instance.send_message(
             chat_id=telegram_chat_id,
             text="Your subscription has expired and you have been removed from the group. Renew your subscription to join again.",
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
         )
         # Remove user from the group
         await bot_instance.ban_chat_member(
@@ -228,6 +240,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         logging.info(
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
+
 
 async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -244,6 +257,7 @@ async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="Choose a subscription plan:", reply_markup=reply_markup
     )
 
+
 if __name__ == "__main__":
     # Create database tables if they do not exist
     create_tables()
@@ -256,8 +270,7 @@ if __name__ == "__main__":
         select_plan, pattern="^15 Minutes$|^30 Minutes$|^1 Hour$"
     )
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern="^cancel\\|")
-    message_handler = MessageHandler(
-        filters.TEXT & ~filters.COMMAND, handle_message)
+    message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     renew_handler = CallbackQueryHandler(handle_renew, pattern="^renew\\|")
 
     application.add_handler(start_handler)
@@ -270,6 +283,6 @@ if __name__ == "__main__":
     job_queue = application.job_queue
     job_queue.run_repeating(
         check_subscription_expiry, interval=datetime.timedelta(seconds=200), first=0
-    )  
+    )
 
     application.run_polling()
