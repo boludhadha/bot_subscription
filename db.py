@@ -144,7 +144,7 @@ def get_user_subscription(chat_id):
     """,
         (chat_id,),
     )
-    subscription = cursor.fetchall()
+    subscription = cursor.fetchone()
     conn.close()
 
     return subscription

@@ -211,10 +211,10 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscription = get_user_subscription(update.effective_chat.id)
 
-    if len(subscription) == 0:
+    if not subscription:
         await update.message.reply_text("You do not have an active subscription")
     else:
-        expiry_date = datetime.datetime.fromisoformat(subscription[-1]["end_date"])
+        expiry_date = datetime.datetime.fromisoformat(subscription["end_date"])
         expiry_date = expiry_date.astimezone(pytz.timezone("Africa/Lagos"))
 
         await update.message.reply_text(
