@@ -1,2 +1,2 @@
-bot: python3 main_script.py
+bot: python3 bot.py
 web: gunicorn webhook_server:app
