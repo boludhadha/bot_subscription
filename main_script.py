@@ -214,7 +214,8 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
     if not subscription:
         await update.message.reply_text("You do not have an active subscription")
     else:
-        expiry_date = datetime.datetime.fromisoformat(subscription["end_date"])
+        logging.log(subscription["end_date"])
+        expiry_date = datetime.datetime.fromisoformat(str(subscription["end_date"]))
         expiry_date = expiry_date.astimezone(pytz.timezone("Africa/Lagos"))
 
         await update.message.reply_text(
