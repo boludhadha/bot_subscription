@@ -133,9 +133,13 @@ def paystack_webhook():
                         payment_reference=payment_reference,
                         group_id=TELEGRAM_GROUP_ID,
                     )
-                    bot_instance.unban_chat_member(
-                    chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id)
-
+                    try:
+                        bot_instance.unban_chat_member(
+                        chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
+                        )   
+                        print(f"User with ID {telegram_chat_id} has been unbanned.")
+                    except Exception as e:
+                        print(f"Failed to unban user: {e}")
                     # temporary invite link
                     invite_link = asyncio.run(
                         create_temporary_invite_link(bot_instance, TELEGRAM_GROUP_ID)
