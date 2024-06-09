@@ -128,6 +128,12 @@ async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Choose a subscription plan:", reply_markup=reply_markup
     )
 
+def expiry_formatting(day):
+    if 10 <= day % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    return str(day) + suffix
 
 async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscription = get_user_subscription(update.effective_chat.id)
@@ -138,10 +144,12 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
         logging.info(subscription["end_date"])
         expiry_date = datetime.datetime.fromisoformat(str(subscription["end_date"]))
         expiry_date = expiry_date.astimezone(pytz.timezone("Africa/Lagos"))
-
+        day_with_suffix = expiry_formatting(expiry_date.day)
+        formatted_expiry_date = expiry_date.strftime(f"{day_with_suffix} %B, %Y at %-I:%M%p").lower()
         await update.message.reply_text(
-            f"Your subscription expires on: {expiry_date.date()} by {expiry_date.hour}:{expiry_date.minute}"
+            f"Your subscription expires on: {formatted_expiry_date}"
         )
+
 
 
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
