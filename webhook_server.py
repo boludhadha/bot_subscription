@@ -55,9 +55,9 @@ async def send_notification(bot, telegram_chat_id, message):
     except Exception as e:
         logging.error(f"Error sending notification: {e}")
 
-async def unban_user(bot, telegram_chat_id, TELEGRAM_GROUP_ID):
+async def unban_user(bot, chat_id, user_id):
     try:
-        await bot.unban_chat_member(chat_id=telegram_chat_id, TELEGRAM_GROUP_ID=TELEGRAM_GROUP_ID)
+        await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
     except Exception as e:
         logging.error(f"Error banning user: {e}")
 
@@ -151,8 +151,8 @@ def paystack_webhook():
                     asyncio.run(
                         unban_user(
                             bot_instance,
-                            telegram_chat_id,
-                            TELEGRAM_GROUP_ID
+                            TELEGRAM_GROUP_ID,
+                            telegram_chat_id
                         )
                     )
                     logger.info("User unbanned successfully")
