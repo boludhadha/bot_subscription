@@ -24,7 +24,7 @@ from db import (
     create_tables,
     get_expired_subscriptions,
     get_user_subscription,
-    remove_subscription,
+    update_subscription_status,
 )
 
 load_dotenv()
@@ -158,10 +158,11 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup,
         )
         # Remove user from the group
-        await bot_instance.ban_chat_member(
+
+        await bot_instance.chat.ban_chat_member(
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
-        remove_subscription(telegram_chat_id)
+        update_subscription_status(telegram_chat_id)
         logging.info(
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )

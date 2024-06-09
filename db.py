@@ -40,6 +40,7 @@ def create_tables():
                 end_date TIMESTAMP,
                 payment_reference TEXT,
                 group_id TEXT
+                status TEXT
             )
         """
         )
@@ -64,8 +65,8 @@ def add_subscription(
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'active')
         ON CONFLICT (telegram_chat_id) DO UPDATE
         SET username = EXCLUDED.username,
             subscription_type = EXCLUDED.subscription_type,
@@ -141,6 +142,7 @@ def get_user_subscription(chat_id):
         """
         SELECT * FROM subscriptions
         WHERE telegram_chat_id = %s
+        AND status = 'active'
     """,
         (chat_id,),
     )
@@ -164,14 +166,16 @@ def get_expired_subscriptions():
     return expired_subscriptions
 
 
-def remove_subscription(chat_id):
+def update_subscription_status(chat_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
-        DELETE FROM subscriptions WHERE telegram_chat_id = %s
+        UPDATE subscriptions
+        SET status = 'inactive'
+        WHERE telegram_chat_id = %s
     """,
-        (chat_id,),
+        (chat_id),
     )
     conn.commit()
     conn.close()
