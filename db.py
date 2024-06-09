@@ -25,7 +25,7 @@ def create_tables():
                 user_id BIGINT NOT NULL,
                 payment_reference TEXT UNIQUE NOT NULL,
                 status TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMPTZ
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """
         )
@@ -36,8 +36,8 @@ def create_tables():
                 telegram_chat_id BIGINT UNIQUE NOT NULL,
                 username TEXT,
                 subscription_type TEXT,
-                start_date TIMESTAMPTZ,
-                end_date TIMESTAMPTZ,
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
                 payment_reference TEXT,
                 group_id TEXT
             )

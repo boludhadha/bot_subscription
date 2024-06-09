@@ -8,7 +8,6 @@ import logging
 import os
 import pytz
 import requests
-from zoneinfo import ZoneInfo
 from logging import StreamHandler
 from flask import Flask, request, Request, abort
 from dotenv import load_dotenv
@@ -40,7 +39,7 @@ bot_instance = Bot(token=BOT_TOKEN)
 
 
 def calculate_end_date(subscription_type):
-    current_date = datetime.now(ZoneInfo('Africa/Lagos'))
+    current_date = datetime.datetime.now()
     if subscription_type == "15 Minutes":
         return current_date + datetime.timedelta(minutes=2)
     elif subscription_type == "30 Minutes":
@@ -116,7 +115,7 @@ def paystack_webhook():
             telegram_chat_id = metadata.get("telegram_chat_id")
             username = metadata.get("username")
             subscription_type = metadata.get("subscription_type")
-            start_date = datetime.now(ZoneInfo('Africa/Lagos'))
+            start_date = datetime.datetime.now()
             end_date = calculate_end_date(subscription_type)
 
             if payment_reference:
