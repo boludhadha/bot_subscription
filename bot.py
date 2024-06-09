@@ -26,11 +26,6 @@ from db import (
     get_user_subscription,
     remove_subscription,
 )
-from callbacks import (
-    cancel_payment,
-    select_plan,
-    handle_renew,
-)
 
 load_dotenv()
 
@@ -173,6 +168,11 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == "__main__":
+    from callbacks import (
+        cancel_payment,
+        select_plan,
+        handle_renew,
+    )
 
     create_tables()
 
