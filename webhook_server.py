@@ -34,9 +34,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
-
 bot_instance = Bot(token=BOT_TOKEN)
-
 
 def calculate_end_date(subscription_type):
     current_date = datetime.datetime.now()
@@ -48,19 +46,19 @@ def calculate_end_date(subscription_type):
         return current_date + datetime.timedelta(minutes=60)
     return None
 
-
 async def send_notification(bot, telegram_chat_id, message):
     try:
         await bot.send_message(chat_id=telegram_chat_id, text=message)
+        logger.info(f"Notification sent to {telegram_chat_id}: {message}")
     except Exception as e:
-        logging.error(f"Error sending notification: {e}")
+        logger.error(f"Error sending notification: {e}")
 
 async def unban_user(bot, chat_id, user_id):
     try:
         await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+        logger.info(f"User {user_id} unbanned in chat {chat_id}")
     except Exception as e:
-        logging.error(f"Error banning user: {e}")
-
+        logger.error(f"Error unbanning user: {e}")
 
 def verify_payment(payment_reference):
     url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
@@ -69,8 +67,8 @@ def verify_payment(payment_reference):
         "Content-Type": "application/json",
     }
     response = requests.get(url, headers=headers)
+    logger.info(f"Payment verification response: {response.json()}")
     return response.json()
-
 
 async def create_temporary_invite_link(
     bot, chat_id, minutes_expire=30, member_limit=1
@@ -82,34 +80,32 @@ async def create_temporary_invite_link(
         invite_link = await bot.create_chat_invite_link(
             chat_id=chat_id, expire_date=expire_date, member_limit=member_limit
         )
+        logger.info(f"Invite link created: {invite_link.invite_link}")
         return invite_link.invite_link
     except Exception as e:
-        logging.error(f"Error creating invite link: {e}")
+        logger.error(f"Error creating invite link: {e}")
         return None
-
 
 def verify_paystack_webhook(request_body, signature):
     hash = hmac.new(
         PAYSTACK_SECRET_KEY.encode(), request_body, hashlib.sha512
     ).hexdigest()
-    return hash == signature
+    is_valid = hash == signature
+    logger.info(f"Webhook verification: {'success' if is_valid else 'failure'}")
+    return is_valid
 
 @app.route("/webhook/paystack", methods=["POST"])
 def paystack_webhook():
     try:
         logger.info("Received Paystack webhook notification")
         payload = request.get_json()
-        logger.info("Webhook payload: %s", payload)
+        logger.info(f"Webhook payload: {payload}")
 
         # Verify webhook is from paystack
         signature = request.headers.get("x-paystack-signature")
         raw_body = request.get_data()
-        if verify_paystack_webhook(raw_body, signature) == False:
-            logger.info(
-                "Unauthorized request to paystack webhook from {} blocked".format(
-                    request.origin
-                )
-            )
+        if not verify_paystack_webhook(raw_body, signature):
+            logger.warning("Unauthorized request to paystack webhook blocked")
             abort(405)
 
         if payload and payload.get("event") == "charge.success":
@@ -128,6 +124,7 @@ def paystack_webhook():
                 payment_verification = verify_payment(payment_reference)
                 if payment_verification.get("status"):
                     update_payment_session_status(payment_reference, "success")
+                    logger.info(f"Payment session updated for reference: {payment_reference}")
 
                     # Add subscription to database
                     add_subscription(
@@ -139,26 +136,26 @@ def paystack_webhook():
                         payment_reference=payment_reference,
                         group_id=TELEGRAM_GROUP_ID,
                     )
+                    logger.info(f"Subscription added to database for user {username}")
 
-                    # temporary invite link
-                    invite_link = asyncio.run(
+                    # Create temporary invite link
+                    loop = asyncio.get_event_loop()
+                    invite_link = loop.run_until_complete(
                         create_temporary_invite_link(bot_instance, TELEGRAM_GROUP_ID)
                     )
 
                     amount_in_naira = amount // 100
 
-        
-                    asyncio.run(
+                    loop.run_until_complete(
                         unban_user(
                             bot_instance,
                             TELEGRAM_GROUP_ID,
                             telegram_chat_id
                         )
                     )
-                    logger.info("User unbanned successfully")
 
-                    # notification with invite link
-                    asyncio.run(
+                    # Notification with invite link
+                    loop.run_until_complete(
                         send_notification(
                             bot_instance,
                             telegram_chat_id,
@@ -175,9 +172,8 @@ def paystack_webhook():
 
         return "Webhook received successfully", 200
     except Exception as e:
-        logger.error("Error processing Paystack webhook: %s", e)
+        logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=4000)
