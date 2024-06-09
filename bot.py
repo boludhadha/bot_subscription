@@ -145,7 +145,8 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
         expiry_date = datetime.datetime.fromisoformat(str(subscription["end_date"]))
         expiry_date = expiry_date.astimezone(pytz.timezone("Africa/Lagos"))
         day_with_suffix = expiry_formatting(expiry_date.day)
-        formatted_expiry_date = expiry_date.strftime(f"{day_with_suffix} %B, %Y at %-I:%M%p").lower()
+        formatted_expiry_date = expiry_date.strftime(f"{day_with_suffix} %B, %Y at %-I:%M%p")
+        formatted_expiry_date = formatted_expiry_date[:len(day_with_suffix) + 1].lower() + formatted_expiry_date[len(day_with_suffix) + 1:]
         await update.message.reply_text(
             f"Your subscription expires on: {formatted_expiry_date}"
         )
