@@ -263,7 +263,7 @@ async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == "__main__":
-    # Create database tables if they do not exist
+    
     create_tables()
 
     application = ApplicationBuilder().token(BOT_TOKEN).build()

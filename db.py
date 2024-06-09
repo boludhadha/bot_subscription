@@ -25,7 +25,7 @@ def create_tables():
                 user_id BIGINT NOT NULL,
                 payment_reference TEXT UNIQUE NOT NULL,
                 status TEXT NOT NULL,
-                created_at TIMESTAMPZ DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMPZ DEFAULT CURRENT_TIMESTAMPZ
             )
         """
         )
