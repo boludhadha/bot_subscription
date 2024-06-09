@@ -55,6 +55,12 @@ async def send_notification(bot, telegram_chat_id, message):
     except Exception as e:
         logging.error(f"Error sending notification: {e}")
 
+async def unban_user(bot, telegram_chat_id, TELEGRAM_GROUP_ID):
+    try:
+        await bot.unban_chat_member(chat_id=telegram_chat_id, TELEGRAM_GROUP_ID=TELEGRAM_GROUP_ID)
+    except Exception as e:
+        logging.error(f"Error banning user: {e}")
+
 
 def verify_payment(payment_reference):
     url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
@@ -141,7 +147,14 @@ def paystack_webhook():
 
                     amount_in_naira = amount // 100
 
-                    asyncio.run(bot_instance.unban_chat_member(TELEGRAM_GROUP_ID, telegram_chat_id))
+        
+                    asyncio.run(
+                        unban_user(
+                            bot_instance,
+                            telegram_chat_id,
+                            TELEGRAM_GROUP_ID
+                        )
+                    )
 
                     # notification with invite link
                     asyncio.run(
