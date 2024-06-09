@@ -133,6 +133,8 @@ def paystack_webhook():
                         payment_reference=payment_reference,
                         group_id=TELEGRAM_GROUP_ID,
                     )
+                    bot_instance.unban_chat_member(
+                    chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id)
 
                     # temporary invite link
                     invite_link = asyncio.run(

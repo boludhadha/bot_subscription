@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     job_queue = application.job_queue
     job_queue.run_repeating(
-        check_subscription_expiry, interval=datetime.timedelta(seconds=200), first=0
+        check_subscription_expiry, interval=datetime.timedelta(seconds=3), first=0
     )
 
     application.run_polling()
