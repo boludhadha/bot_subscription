@@ -154,9 +154,14 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
 
         # Remove user from the group
         await bot_instance.ban_chat_member(
-            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id, disable_notification=True
+            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id,
         )
-
+        try:
+            await bot_instance.delete_message(
+            chat_id=TELEGRAM_GROUP_ID, message_id=context.update.effective_message.message_id
+         )
+        except Exception as e:
+            logging.error(f"Error deleting message: {e}")
         try:
             keyboard = [
                 [
