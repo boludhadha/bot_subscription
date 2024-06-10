@@ -154,7 +154,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         await bot_instance.ban_chat_member(
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
-        update_subscription_status(telegram_chat_id)
+        #update_subscription_status(telegram_chat_id)
         logging.info(
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
