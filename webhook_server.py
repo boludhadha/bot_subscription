@@ -6,8 +6,9 @@ import asyncio
 import logging
 import os
 import json
+import requests
 from logging import StreamHandler
-from flask import Flask, request, Request, abort, jsonify
+from flask import Flask, request, Request, abort
 from dotenv import load_dotenv
 from db import add_subscription, update_payment_session_status
 
@@ -107,10 +108,15 @@ def initiate_payment(
     response = request.post(url, json=data, headers=headers)
     return response.json()
 
+
 def verify_payment(payment_reference, payment_gateway):
     if payment_gateway == 'flutterwave':
-        # Verification logic for Flutterwave payment
-        pass
+        url = f"https://api.flutterwave.com/v3/transactions/{payment_reference}/verify"
+        headers = {
+            "Authorization": f'Bearer {FLW_SECRET_KEY}',
+            "Content-Type": "application/json",
+        }
+        response = requests.get(url, headers=headers)
     else:
         url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
         headers = {
@@ -118,8 +124,8 @@ def verify_payment(payment_reference, payment_gateway):
             "Content-Type": "application/json",
         }
         response = request.get(url, headers=headers)
-        logger.info(f"Payment verification response: {response.json()}")
-        return response.json()
+    logger.info(f"Payment verification response: {response.json()}")
+    return response.json()
 
 
 async def create_temporary_invite_link(bot, chat_id, minutes_expire=30, member_limit=1):
@@ -145,11 +151,13 @@ def verify_paystack_webhook(request_body, signature):
     logger.info(f"Webhook verification: {'success' if is_valid else 'failure'}")
     return is_valid
 
+
 def verify_flutterwave_webhook(payload, signature):
     computed_hash = hmac.new(
         FLW_SECRET_KEY.encode(), payload.encode(), hashlib.sha256
     ).hexdigest()
     return computed_hash == signature
+
 
 
 @app.route("/webhook/paystack", methods=["POST"])
@@ -230,6 +238,7 @@ def paystack_webhook():
     except Exception as e:
         logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
+
 
 
 @app.route("/webhook/flutterwave", methods=["POST"])
