@@ -64,23 +64,27 @@ async def unban_user(bot, chat_id, user_id):
         logger.error(f"Error unbanning user: {e}")
 
 def initiate_payment(
-    amount, email, reference, telegram_chat_id, subscription_type, username,payment_gateway
+    amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
 ):
-    url = "https://api.paystack.co/transaction/initialize"
+    url = "https://api.flutterwave.com/v3/payments"
     headers = {
-        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Authorization": f"Bearer {FLW_SECRET_KEY}",
         "Content-Type": "application/json",
     }
     data = {
-        "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
-        "email": email,
-        "reference": reference,
-        "metadata": {
-            "telegram_chat_id": telegram_chat_id,
-            "payment_reference": reference,
-            "subscription_type": subscription_type,
-            "username": username,
+        "tx_ref": reference,
+        "amount": amount,
+        "currency": "NGN",
+        "redirect_url": "https://yourwebsite.com/redirect",
+        "payment_options": "card",
+        "customer": {
+            "email": email,
+            "name": username,
         },
+        "meta": {
+            "telegram_chat_id": telegram_chat_id,
+            "subscription_type": subscription_type,
+        }
     }
     response = requests.post(url, json=data, headers=headers)
     return response.json()
