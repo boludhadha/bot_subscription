@@ -19,7 +19,6 @@ from bot import (
     generate_unique_reference,
 )
 
-
 async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -30,7 +29,6 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
             action, reference = query.data.split("|", 1)
             if action == "cancel" and reference:
                 logging.info(f"Processing cancel action for reference: {reference}")
-                # Update payment session status to 'cancelled'
                 update_payment_session_status(reference, "cancelled")
                 await query.edit_message_text(text="Payment process has been canceled.")
             else:
@@ -48,63 +46,39 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(f"Error in cancel_payment handler: {e}")
         await query.edit_message_text(
-            text="Failed to cancel payment. Please try again later."
+            text="Failed to cancel payment due to an internal error."
         )
-
-
-async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    selected_plan = query.data
-    logging.info(f"Selected plan: {selected_plan}")
-    if selected_plan in subscription_plans:
-        subscription_details = subscription_plans[selected_plan]
-        username = query.from_user.username
-        email = "dboluwatife928@gmail.com"
-        reference = generate_unique_reference()
-        telegram_chat_id = query.from_user.id
-        amount = subscription_details["price"]
-        subscription_type = selected_plan
-        """ bot_instance.unban_chat_member(
-            TELEGRAM_GROUP_ID, update.effective_message.chat_id, only_if_banned=True
-        ) """
-
-        payment_response = initiate_payment(
-            amount, email, reference, telegram_chat_id, subscription_type, username
-        )
-
-        if payment_response.get("status"):
-            # Add payment session to the database
-            add_payment_session(telegram_chat_id, reference)
-
-            payment_url = payment_response["data"]["authorization_url"]
-            keyboard = [
-                [InlineKeyboardButton("Paystack Payment Page", url=payment_url)],
-                [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(
-                f"You selected the {selected_plan} plan.\n\n"
-                f"Note that this is not a recurring subscription but rather a one-time payment, therefore after {selected_plan} you would be removed from the group.\n\n"
-                "Proceed to payment by clicking the button link below👇🏽",
-                reply_markup=reply_markup,
-            )
-        else:
-            await query.edit_message_text(
-                text="Failed to initiate payment. Please try again later."
-            )
-    else:
-        logging.error(f"Invalid plan selected: {selected_plan}")
-        await query.edit_message_text(
-            text="Invalid subscription plan selected. Please try again."
-        )
-
 
 async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    telegram_chat_id = query.data.split("|")[1]
 
-    # Display the subscription plans
+    try:
+        keyboard = [
+            [InlineKeyboardButton("Flutterwave", callback_data="gateway_flutterwave")],
+            [InlineKeyboardButton("Paystack", callback_data="gateway_paystack")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            text="Choose a payment gateway:", reply_markup=reply_markup
+        )
+    except Exception as e:
+        logging.error(f"Error in handle_renew handler: {e}")
+        await query.edit_message_text(
+            text="Failed to renew subscription due to an internal error."
+        )
+
+async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_data = context.user_data
+
+    if query.data == "gateway_flutterwave":
+        user_data['payment_gateway'] = 'flutterwave'
+    elif query.data == "gateway_paystack":
+        user_data['payment_gateway'] = 'paystack'
+
     keyboard = [
         [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
         [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
@@ -114,3 +88,47 @@ async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         text="Choose a subscription plan:", reply_markup=reply_markup
     )
+
+async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    selected_plan = query.data
+
+    if selected_plan not in subscription_plans:
+        await query.edit_message_text(text="Invalid subscription plan selected.")
+        return
+
+    subscription_price = subscription_plans[selected_plan]["price"]
+    unique_reference = generate_unique_reference()
+
+    keyboard = [
+        [InlineKeyboardButton("Cancel", callback_data=f"cancel|{unique_reference}")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(
+        text=f"Initiating {selected_plan} plan for {subscription_price/100:.2f} NGN. Please wait...",
+        reply_markup=reply_markup,
+    )
+
+    chat_id = query.message.chat.id
+    user_data = context.user_data
+    payment_gateway = user_data.get('payment_gateway', 'flutterwave')
+
+    payment_link = initiate_payment(
+        user_id=chat_id,
+        amount=subscription_price,
+        payment_reference=unique_reference,
+        payment_gateway=payment_gateway,
+    )
+
+    if payment_link:
+        await query.edit_message_text(
+            text=f"Click the link to complete the payment: {payment_link}",
+            reply_markup=reply_markup,
+        )
+        add_payment_session(chat_id, unique_reference, selected_plan, subscription_price)
+    else:
+        await query.edit_message_text(
+            text="Failed to initiate payment. Please try again later."
+        )
