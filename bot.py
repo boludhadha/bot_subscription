@@ -154,12 +154,22 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         await bot_instance.ban_chat_member(
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
+        await delete_recent_user_messages(telegram_chat_id)
         # Update subscription status to inactive
         update_subscription_status(telegram_chat_id, payment_reference, 'inactive')
         logging.info(
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
 
+
+async def delete_recent_user_messages(chat_id: int):
+    # Get recent messages sent by the user in the group
+    messages = await bot_instance.get_chat_history(chat_id)
+    for message in messages:
+        if message.from_user.id == chat_id:
+            # Delete the message
+            await bot_instance.delete_message(chat_id=chat_id, message_id=message.message_id)
+            
 if __name__ == "__main__":
     from callbacks import (
         cancel_payment,
