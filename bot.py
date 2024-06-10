@@ -24,6 +24,7 @@ from db import (
     create_tables,
     get_expired_subscriptions,
     get_user_subscription,
+    update_subscription_status
 )
 
 load_dotenv()
