@@ -137,9 +137,8 @@ def paystack_webhook():
         logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
 
-
-@app.route("/payment-callback", methods=["POST"])
-def flutterwave_payment_callback():
+@app.route("/webhook/flutterwave", methods=["POST"])
+def flutterwave_webhook():
     try:
         logger.info("Received Flutterwave webhook notification")
         payload = request.get_json()
@@ -211,7 +210,7 @@ def flutterwave_payment_callback():
                         "Payment received - Reference: %s, Amount: %s %s",
                         payment_reference,
                         amount_in_naira,
-                        currency
+                        currency,
                     )
 
         return "Webhook received successfully", 200
@@ -222,3 +221,7 @@ def flutterwave_payment_callback():
 
 if __name__ == "__main__":
     app.run(debug=True, port=4000)
+
+
+
+
