@@ -23,7 +23,7 @@ from db import (
     create_tables,
     get_expired_subscriptions,
     get_user_subscription,
-    update_subscription_status
+    update_subscription_status,
 )
 
 load_dotenv()
@@ -47,11 +47,13 @@ subscription_plans = {
 
 bot_instance = Bot(token=BOT_TOKEN)
 
+
 def generate_unique_reference():
     reference = str(uuid.uuid4())
     if len(reference) > 100:
         reference = reference[:100]
     return reference
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
@@ -71,6 +73,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(f"Error in start handler: {e}")
 
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
@@ -79,8 +82,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_message == "Join Private Group":
         keyboard = [
             [InlineKeyboardButton("Flutterwave", callback_data="gateway_flutterwave")],
-            [InlineKeyboardButton("Paystack", callback_data="gateway_paystack")]
-                    ]
+            [InlineKeyboardButton("Paystack", callback_data="gateway_paystack")],
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -95,6 +98,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="You selected an option. Please use /plans to see subscription plans or other options.",
         )
 
+
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
@@ -108,12 +112,14 @@ async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Choose a subscription plan:", reply_markup=reply_markup
     )
 
+
 def expiry_formatting(day):
     if 10 <= day % 100 <= 20:
         suffix = "th"
     else:
         suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return str(day) + suffix
+
 
 async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscription = get_user_subscription(update.effective_chat.id)
@@ -136,30 +142,42 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
             f"Your subscription expires on: {formatted_expiry_date}"
         )
 
+
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
-    for subscription in expired_subscriptions:
-        telegram_chat_id = subscription["telegram_chat_id"]
-        payment_reference = subscription["payment_reference"]
-        keyboard = [
-            [InlineKeyboardButton("Renew", callback_data=f"renew|{telegram_chat_id}")],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await bot_instance.send_message(
-            chat_id=telegram_chat_id,
-            text="Your subscription has expired and you have been removed from the group. Renew your subscription to join again.",
-            reply_markup=reply_markup,
-        )
-        # Remove user from the group
-        await bot_instance.ban_chat_member(
-            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
-        )
-        await delete_recent_user_messages(telegram_chat_id)
-        # Update subscription status to inactive
-        update_subscription_status(telegram_chat_id, payment_reference, 'inactive')
-        logging.info(
-            f"User {telegram_chat_id} removed from group due to expired subscription"
-        )
+    try:
+        for subscription in expired_subscriptions:
+            telegram_chat_id = subscription["telegram_chat_id"]
+            payment_reference = subscription["payment_reference"]
+
+            # Update subscription status to inactive
+            update_subscription_status(telegram_chat_id, payment_reference, "inactive")
+
+            # Remove user from the group
+            await bot_instance.ban_chat_member(
+                chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
+            )
+
+            await delete_recent_user_messages(telegram_chat_id)
+
+            keyboard = [
+                [
+                    InlineKeyboardButton(
+                        "Renew", callback_data=f"renew|{telegram_chat_id}"
+                    )
+                ],
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await bot_instance.send_message(
+                chat_id=telegram_chat_id,
+                text="Your subscription has expired and you have been removed from the group. Renew your subscription to join again.",
+                reply_markup=reply_markup,
+            )
+            logging.info(
+                f"User {telegram_chat_id} removed from group due to expired subscription"
+            )
+    except:
+        pass
 
 
 async def delete_recent_user_messages(chat_id: int):
@@ -168,8 +186,11 @@ async def delete_recent_user_messages(chat_id: int):
     for message in messages:
         if message.from_user.id == chat_id:
             # Delete the message
-            await bot_instance.delete_message(chat_id=chat_id, message_id=message.message_id)
-            
+            await bot_instance.delete_message(
+                chat_id=chat_id, message_id=message.message_id
+            )
+
+
 if __name__ == "__main__":
     from callbacks import (
         cancel_payment,
