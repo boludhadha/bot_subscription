@@ -75,7 +75,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             payment_url = payment_response["data"]["authorization_url"]
             keyboard = [
-                [InlineKeyboardButton("Flutterwave Payment Page", url=payment_url)],
+                [InlineKeyboardButton("PayStack Payment Page", url=payment_url)],
                 [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
