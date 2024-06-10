@@ -73,7 +73,8 @@ def add_subscription(
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,
             payment_reference = EXCLUDED.payment_reference,
-            group_id = EXCLUDED.group_id
+            group_id = EXCLUDED.group_id,
+            status = EXCLUDED.status
     """,
         (
             chat_id,
@@ -177,7 +178,7 @@ def update_subscription_status(chat_id):
         WHERE telegram_chat_id = %s
         AND status = 'active'
     """,
-        (chat_id),
+        (chat_id,),
     )
     conn.commit()
     conn.close()
