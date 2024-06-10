@@ -72,9 +72,9 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Add payment session to the database
             add_payment_session(telegram_chat_id, reference)
 
-            payment_url = payment_response["data"]["authorization_url"]
+            payment_url = payment_response["data"]["link"]
             keyboard = [
-                [InlineKeyboardButton("Paystack Payment Page", url=payment_url)],
+                [InlineKeyboardButton("Flutterwave Payment Page", url=payment_url)],
                 [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
