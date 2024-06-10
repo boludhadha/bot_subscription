@@ -160,17 +160,17 @@ def get_expired_subscriptions():
     return expired_subscriptions
 
 
-def update_subscription_status(chat_id):
+def update_subscription_status(chat_id, payment_reference, status):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         """
         UPDATE subscriptions
-        SET status = 'inactive'
-        WHERE telegram_chat_id = %s
-        AND status = 'active'
+        SET status = %s
+        WHERE telegram_chat_id = %s AND payment_reference = %s
     """,
-        (chat_id,),
+        (status, chat_id, payment_reference),
     )
     conn.commit()
     conn.close()
+

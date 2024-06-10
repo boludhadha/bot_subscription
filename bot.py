@@ -139,6 +139,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
     for subscription in expired_subscriptions:
         telegram_chat_id = subscription["telegram_chat_id"]
+        payment_reference = subscription["payment_reference"]
         keyboard = [
             [InlineKeyboardButton("Renew", callback_data=f"renew|{telegram_chat_id}")],
         ]
@@ -149,11 +150,11 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup,
         )
         # Remove user from the group
-
         await bot_instance.ban_chat_member(
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
-        #update_subscription_status(telegram_chat_id)
+        # Update subscription status to inactive
+        update_subscription_status(telegram_chat_id, payment_reference, 'inactive')
         logging.info(
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
