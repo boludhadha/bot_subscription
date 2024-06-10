@@ -67,14 +67,6 @@ def add_subscription(
         """
         INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id, status)
         VALUES (%s, %s, %s, %s, %s, %s, %s, 'active')
-        ON CONFLICT (telegram_chat_id) DO UPDATE
-        SET username = EXCLUDED.username,
-            subscription_type = EXCLUDED.subscription_type,
-            start_date = EXCLUDED.start_date,
-            end_date = EXCLUDED.end_date,
-            payment_reference = EXCLUDED.payment_reference,
-            group_id = EXCLUDED.group_id,
-            status = EXCLUDED.status
     """,
         (
             chat_id,
