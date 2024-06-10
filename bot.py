@@ -33,6 +33,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 
+FLUTTERWAVE_SECRET_KEY = os.getenv("FLUTTERWAVE_SECRET_KEY")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -47,26 +48,22 @@ subscription_plans = {
 
 bot_instance = Bot(token=BOT_TOKEN)
 
-
 def generate_unique_reference():
     reference = str(uuid.uuid4())
     if len(reference) > 100:
         reference = reference[:100]
     return reference
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
     try:
         keyboard = [["Join Private Group"], ["Subscription Status"]]
-
         reply_markup = ReplyKeyboardMarkup(
             keyboard,
             resize_keyboard=True,
             input_field_placeholder="Select an option below to interact with the bot",
         )
-
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text="Welcome, please click on the 'Join private group' button below",
@@ -75,14 +72,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logging.error(f"Error in start handler: {e}")
 
-
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
     user_message = update.message.text
 
     if user_message == "Join Private Group":
-        await plans(update, context)
+        keyboard = [
+            [InlineKeyboardButton("Flutterwave", callback_data="gateway_flutterwave")],
+            [InlineKeyboardButton("Paystack", callback_data="gateway_paystack")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="Choose a payment gateway:",
+            reply_markup=reply_markup,
+        )
     elif user_message == "Subscription Status":
         await check_subscription_status(update, context)
     else:
@@ -91,6 +96,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="You selected an option. Please use /plans to see subscription plans or other options.",
         )
 
+async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_data = context.user_data
+
+    if query.data == "gateway_flutterwave":
+        user_data['payment_gateway'] = 'flutterwave'
+    elif query.data == "gateway_paystack":
+        user_data['payment_gateway'] = 'paystack'
+
+    keyboard = [
+        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
+        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text="Choose a subscription plan:", reply_markup=reply_markup
+    )
 
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
@@ -105,14 +129,12 @@ async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Choose a subscription plan:", reply_markup=reply_markup
     )
 
-
 def expiry_formatting(day):
     if 10 <= day % 100 <= 20:
         suffix = "th"
     else:
         suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return str(day) + suffix
-
 
 async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscription = get_user_subscription(update.effective_chat.id)
@@ -134,7 +156,6 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
         await update.message.reply_text(
             f"Your subscription expires on: {formatted_expiry_date}"
         )
-
 
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
@@ -160,12 +181,12 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             f"User {telegram_chat_id} removed from group due to expired subscription"
         )
 
-
 if __name__ == "__main__":
     from callbacks import (
         cancel_payment,
         select_plan,
         handle_renew,
+        handle_gateway_selection,
     )
 
     create_tables()
@@ -177,6 +198,9 @@ if __name__ == "__main__":
     select_plan_handler = CallbackQueryHandler(
         select_plan, pattern="^15 Minutes$|^30 Minutes$|^1 Hour$"
     )
+    gateway_selection_handler = CallbackQueryHandler(
+        handle_gateway_selection, pattern="^gateway_flutterwave$|^gateway_paystack$"
+    )
     cancel_handler = CallbackQueryHandler(cancel_payment, pattern="^cancel\\|")
     message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
     renew_handler = CallbackQueryHandler(handle_renew, pattern="^renew\\|")
@@ -184,6 +208,7 @@ if __name__ == "__main__":
     application.add_handler(start_handler)
     application.add_handler(plans_handler)
     application.add_handler(select_plan_handler)
+    application.add_handler(gateway_selection_handler)
     application.add_handler(cancel_handler)
     application.add_handler(message_handler)
     application.add_handler(renew_handler)
