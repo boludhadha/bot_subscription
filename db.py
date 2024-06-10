@@ -12,7 +12,6 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
 
-
 def create_tables():
     conn = get_connection()
     cursor = conn.cursor()
@@ -32,15 +31,15 @@ def create_tables():
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS subscriptions (
-                id SERIAL PRIMARY KEY,
-                telegram_chat_id BIGINT UNIQUE NOT NULL,
+                telegram_chat_id BIGINT NOT NULL,
+                payment_reference TEXT NOT NULL,
                 username TEXT,
                 subscription_type TEXT,
                 start_date TIMESTAMP,
                 end_date TIMESTAMP,
-                payment_reference TEXT,
                 group_id TEXT,
-                status TEXT
+                status TEXT,
+                PRIMARY KEY (telegram_chat_id, payment_reference)
             )
         """
         )
@@ -50,6 +49,7 @@ def create_tables():
         logging.error(f"Error creating tables: {e}")
     finally:
         conn.close()
+
 
 
 def add_subscription(
