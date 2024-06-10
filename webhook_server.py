@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from db import add_subscription, update_payment_session_status
 
 load_dotenv()
-
+FLW = 4243434
 DATABASE_URL = os.getenv("DATABASE_URL")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -20,7 +20,6 @@ TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
 
 app = Flask(__name__)
 
-# Configure logging
 log_formatter = logging.Formatter(
     "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
