@@ -111,6 +111,8 @@ def initiate_payment(
         logger.error(f"Error during payment initiation: {e}")
         return {"error": "An error occurred during payment initiation"}  # Return an error response
 
+    
+
 def verify_payment(payment_reference, payment_gateway):
     if payment_gateway == 'flutterwave':
         url = f"https://api.flutterwave.com/v3/transactions/{payment_reference}/verify"
