@@ -87,7 +87,7 @@ def initiate_payment(
                 "username": username,
             },
         }
-    else:
+    elif payment_gateway == 'paystack':
         url = "https://api.paystack.co/transaction/initialize"
         headers = {
             "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",

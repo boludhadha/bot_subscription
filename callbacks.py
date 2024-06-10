@@ -13,6 +13,7 @@ from db import (
     add_payment_session,
     update_payment_session_status,
 )
+
 from bot import (
     TELEGRAM_GROUP_ID,
     subscription_plans,
@@ -52,7 +53,16 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    selected_gateway = query.data
+    logging.info(f"Selected payment gateway: {selected_gateway}")
+    # Assuming selected_gateway is either "gateway_flutterwave" or "gateway_paystack"
+    await select_plan(update, context, selected_gateway)
+
+
+async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_gateway: str):
     query = update.callback_query
     await query.answer()
     selected_plan = query.data
@@ -70,7 +80,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ) """
 
         payment_response = initiate_payment(
-            amount, email, reference, telegram_chat_id, subscription_type, username
+            amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
         )
 
         if payment_response.get("status"):
