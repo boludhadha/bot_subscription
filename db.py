@@ -159,6 +159,7 @@ def get_expired_subscriptions():
         """
         SELECT * FROM subscriptions
         WHERE end_date < CURRENT_TIMESTAMP
+        AND status = 'active'
     """
     )
     expired_subscriptions = cursor.fetchall()
