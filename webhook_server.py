@@ -64,7 +64,7 @@ async def unban_user(bot, chat_id, user_id):
         logger.error(f"Error unbanning user: {e}")
 
 def initiate_payment(
-    amount, email, reference, telegram_chat_id, subscription_type, username
+    amount, email, reference, telegram_chat_id, subscription_type, username,payment_gateway
 ):
     url = "https://api.paystack.co/transaction/initialize"
     headers = {
