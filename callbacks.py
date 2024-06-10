@@ -1,25 +1,11 @@
 import logging
 from bot import bot_instance
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import (
-    ContextTypes,
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ContextTypes
 from webhook_server import initiate_payment
-from db import (
-    add_payment_session,
-    update_payment_session_status,
-)
+from db import add_payment_session, update_payment_session_status
 
-from bot import (
-    TELEGRAM_GROUP_ID,
-    subscription_plans,
-    generate_unique_reference,
-)
-
+from bot import TELEGRAM_GROUP_ID, subscription_plans, generate_unique_reference
 
 async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -35,32 +21,31 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 update_payment_session_status(reference, "cancelled")
                 await query.edit_message_text(text="Payment process has been canceled.")
             else:
-                logging.error(
-                    f"Invalid action or reference in callback data: {query.data}"
-                )
-                await query.edit_message_text(
-                    text="Failed to cancel payment. Please try again later."
-                )
+                logging.error(f"Invalid action or reference in callback data: {query.data}")
+                await query.edit_message_text(text="Failed to cancel payment. Please try again later.")
         else:
             logging.error("Invalid callback data format")
-            await query.edit_message_text(
-                text="Failed to cancel payment. Please try again later."
-            )
+            await query.edit_message_text(text="Failed to cancel payment. Please try again later.")
     except Exception as e:
         logging.error(f"Error in cancel_payment handler: {e}")
-        await query.edit_message_text(
-            text="Failed to cancel payment. Please try again later."
-        )
-
+        await query.edit_message_text(text="Failed to cancel payment. Please try again later.")
 
 async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     selected_gateway = query.data
     logging.info(f"Selected payment gateway: {selected_gateway}")
-    # Assuming selected_gateway is either "gateway_flutterwave" or "gateway_paystack"
-    await select_plan(update, context, selected_gateway)
-
+    
+    # Display subscription plans
+    keyboard = [
+        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
+        [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
+        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text="Choose a subscription plan:", reply_markup=reply_markup
+    )
 
 async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_gateway: str):
     query = update.callback_query
@@ -75,9 +60,6 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE, paymen
         telegram_chat_id = query.from_user.id
         amount = subscription_details["price"]
         subscription_type = selected_plan
-        """ bot_instance.unban_chat_member(
-            TELEGRAM_GROUP_ID, update.effective_message.chat_id, only_if_banned=True
-        ) """
 
         payment_response = initiate_payment(
             amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
@@ -108,7 +90,6 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE, paymen
         await query.edit_message_text(
             text="Invalid subscription plan selected. Please try again."
         )
-
 
 async def handle_renew(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

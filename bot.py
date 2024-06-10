@@ -3,7 +3,6 @@ import os
 import uuid
 import pytz
 import datetime
-import requests
 from dotenv import load_dotenv
 from telegram import (
     Update,
@@ -81,7 +80,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("Flutterwave", callback_data="gateway_flutterwave")],
             [InlineKeyboardButton("Paystack", callback_data="gateway_paystack")]
-        ]
+                    ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
