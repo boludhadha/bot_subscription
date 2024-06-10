@@ -145,21 +145,21 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
 
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
     expired_subscriptions = get_expired_subscriptions()
-    try:
-        for subscription in expired_subscriptions:
-            telegram_chat_id = subscription["telegram_chat_id"]
-            payment_reference = subscription["payment_reference"]
+    for subscription in expired_subscriptions:
+        telegram_chat_id = subscription["telegram_chat_id"]
+        payment_reference = subscription["payment_reference"]
 
-            # Update subscription status to inactive
-            update_subscription_status(telegram_chat_id, payment_reference, "inactive")
+        # Update subscription status to inactive
+        update_subscription_status(telegram_chat_id, payment_reference, "inactive")
 
-            # Remove user from the group
-            await bot_instance.ban_chat_member(
-                chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
-            )
+        # Remove user from the group
+        await bot_instance.ban_chat_member(
+            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
+        )
 
-            await delete_recent_user_messages(telegram_chat_id)
+        await delete_recent_user_messages(telegram_chat_id)
 
+        try:
             keyboard = [
                 [
                     InlineKeyboardButton(
@@ -176,8 +176,10 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             logging.info(
                 f"User {telegram_chat_id} removed from group due to expired subscription"
             )
-    except:
-        pass
+        except Exception as e:
+            logging.error(
+                f"Error removing user {subscription['username']} from group: {e}"
+            )
 
 
 async def delete_recent_user_messages(chat_id: int):
