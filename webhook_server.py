@@ -5,16 +5,14 @@ import datetime
 import asyncio
 import logging
 import os
-import json
 import requests
 from logging import StreamHandler
-from flask import Flask, request, abort
+from flask import Flask, request, Request, abort
 from dotenv import load_dotenv
 from db import add_subscription, update_payment_session_status
 
 load_dotenv()
 
-FLW_SECRET_KEY = os.getenv("FLW_SECRET_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -23,7 +21,9 @@ TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
 app = Flask(__name__)
 
 # Configure logging
-log_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+log_formatter = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 console_handler = StreamHandler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
@@ -62,46 +62,36 @@ async def unban_user(bot, chat_id, user_id):
         logger.error(f"Error unbanning user: {e}")
 
 
-def initiate_payment(amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway):
-    url = "https://api.flutterwave.com/v3/payments"
+def initiate_payment(
+    amount, email, reference, telegram_chat_id, subscription_type, username
+):
+    url = "https://api.paystack.co/transaction/initialize"
     headers = {
-        "Authorization": f"Bearer {FLW_SECRET_KEY}",
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         "Content-Type": "application/json",
     }
     data = {
-        "tx_ref": reference,
-        "amount": amount,
-        "currency": "NGN",
-        "redirect_url": "https://yourwebsite.com/redirect",
-        "payment_options": "card",
-        "customer": {
-            "email": email,
-            "name": username,
-        },
-        "meta": {
+        "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
+        "email": email,
+        "reference": reference,
+        "metadata": {
             "telegram_chat_id": telegram_chat_id,
+            "payment_reference": reference,
             "subscription_type": subscription_type,
-        }
+            "username": username,
+        },
     }
     response = requests.post(url, json=data, headers=headers)
     return response.json()
 
 
-def verify_payment(payment_reference, payment_gateway):
-    if payment_gateway == 'flutterwave':
-        url = f"https://api.flutterwave.com/v3/transactions/{payment_reference}/verify"
-        headers = {
-            "Authorization": f'Bearer {FLW_SECRET_KEY}',
-            "Content-Type": "application/json",
-        }
-        response = requests.get(url, headers=headers)
-    else:
-        url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
-        headers = {
-            "Authorization": f'Bearer {PAYSTACK_SECRET_KEY}',
-            "Content-Type": "application/json",
-        }
-        response = requests.get(url, headers=headers)
+def verify_payment(payment_reference):
+    url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
+    headers = {
+        "Authorization": f'Bearer {os.getenv("PAYSTACK_SECRET_KEY")}',
+        "Content-Type": "application/json",
+    }
+    response = requests.get(url, headers=headers)
     logger.info(f"Payment verification response: {response.json()}")
     return response.json()
 
@@ -121,41 +111,35 @@ async def create_temporary_invite_link(bot, chat_id, minutes_expire=30, member_l
         return None
 
 
-def verify_flutterwave_webhook(payload, signature):
-    computed_hash = hmac.new(
-        FLW_SECRET_KEY.encode(), payload.encode(), hashlib.sha256
+def verify_paystack_webhook(request_body, signature):
+    hash = hmac.new(
+        PAYSTACK_SECRET_KEY.encode(), request_body, hashlib.sha512
     ).hexdigest()
-    return computed_hash == signature
+    is_valid = hash == signature
+    logger.info(f"Webhook verification: {'success' if is_valid else 'failure'}")
+    return is_valid
 
 
 @app.route("/webhook/paystack", methods=["POST"])
 def paystack_webhook():
     try:
-        # Handling logic for Paystack webhook
-        pass
-    except Exception as e:
-        logger.error(f"Error processing Paystack webhook: {e}")
-        return "An error occurred", 500
-
-@app.route("/webhook/flutterwave", methods=["POST"])
-def flutterwave_webhook():
-    try:
-        logger.info("Received Flutterwave webhook notification")
+        logger.info("Received Paystack webhook notification")
         payload = request.get_json()
         logger.info(f"Webhook payload: {payload}")
 
-        # Verify webhook is from Flutterwave
-        signature = request.headers.get("verif-hash")
-        if not verify_flutterwave_webhook(json.dumps(payload), signature):
-            logger.warning("Unauthorized request to Flutterwave webhook blocked")
+        # Verify webhook is from paystack
+        signature = request.headers.get("x-paystack-signature")
+        raw_body = request.get_data()
+        if not verify_paystack_webhook(raw_body, signature):
+            logger.warning("Unauthorized request to paystack webhook blocked")
             abort(405)
 
-        if payload and payload.get("event") == "charge.completed":
-            data = payload
-            payment_reference = data.get("tx_ref")
-            amount = data.get("amount")  # Amount in smallest currency unit
+        if payload and payload.get("event") == "charge.success":
+            data = payload.get("data", {})
+            metadata = data.get("metadata", {})
+            payment_reference = metadata.get("payment_reference")
+            amount = data.get("amount")  # Amount in kobo
             currency = data.get("currency")
-            metadata = data.get("meta")
             telegram_chat_id = metadata.get("telegram_chat_id")
             username = metadata.get("username")
             subscription_type = metadata.get("subscription_type")
@@ -163,10 +147,7 @@ def flutterwave_webhook():
             end_date = calculate_end_date(subscription_type)
 
             if payment_reference:
-                # Verify payment with Flutterwave
-                # Add your verification logic here
-                payment_verification = {}  # Placeholder for verification logic
-
+                payment_verification = verify_payment(payment_reference)
                 if payment_verification.get("status"):
                     update_payment_session_status(payment_reference, "success")
                     logger.info(
@@ -215,13 +196,9 @@ def flutterwave_webhook():
 
         return "Webhook received successfully", 200
     except Exception as e:
-        logger.error(f"Error processing Flutterwave webhook: {e}")
+        logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
 
 
 if __name__ == "__main__":
     app.run(debug=True, port=4000)
-
-
-
-

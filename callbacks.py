@@ -30,13 +30,14 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Error in cancel_payment handler: {e}")
         await query.edit_message_text(text="Failed to cancel payment. Please try again later.")
 
+
+
 async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     selected_gateway = query.data
     context.user_data["payment_gateway"] = selected_gateway  # Store payment gateway in context
     logging.info(f"Selected payment gateway: {selected_gateway}")
-    
     # Display subscription plans
     keyboard = [
         [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
@@ -65,14 +66,14 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subscription_type = selected_plan
 
         payment_response = initiate_payment(
-            amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
+            amount, email, reference, telegram_chat_id, subscription_type, username
         )
 
         if payment_response.get("status"):
             # Add payment session to the database
             add_payment_session(telegram_chat_id, reference)
 
-            payment_url = payment_response["data"]["link"]
+            payment_url = payment_response["data"]["authorization_url"]
             keyboard = [
                 [InlineKeyboardButton("Flutterwave Payment Page", url=payment_url)],
                 [InlineKeyboardButton("Cancel", callback_data=f"cancel|{reference}")],
