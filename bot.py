@@ -10,8 +10,6 @@ from telegram import (
     InlineKeyboardMarkup,
     Bot,
     ReplyKeyboardMarkup,
-    ChatMemberUpdated,
-    Chat
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -20,7 +18,6 @@ from telegram.ext import (
     CallbackQueryHandler,
     MessageHandler,
     filters,
-    CallbackContext,
 )
 from db import (
     create_tables,
@@ -157,24 +154,8 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
 
         # Remove user from the group
         await bot_instance.ban_chat_member(
-            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
+            chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id, disable_notification=True
         )
-
-        # Instead of calling delete_left_message with the telegram_chat_id,
-        # we create a mock Update object
-        mock_update = Update(
-            update_id=0,
-            my_chat_member=ChatMemberUpdated(
-                chat=Chat(id=TELEGRAM_GROUP_ID, type='group'),
-                from_user=None,
-                date=datetime.datetime.now(),
-                old_chat_member=None,
-                new_chat_member=None,
-            )
-        )
-        mock_context = CallbackContext.from_update(mock_update, application=context.application)
-
-        await delete_left_message(mock_update, mock_context)
 
         try:
             keyboard = [
@@ -198,17 +179,6 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
                 f"Error removing user {subscription['username']} from group: {e}"
             )
 
-
-async def delete_left_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Delete messages indicating a user was removed."""
-    message = update.message
-
-    if message and message.left_chat_member:
-        try:
-            await context.bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
-            logging.info(f"Deleted left message in chat {message.chat_id}")
-        except Exception as e:
-            logging.error(f"Error deleting message: {e}")
 
 
 if __name__ == "__main__":
