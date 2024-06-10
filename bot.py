@@ -153,6 +153,7 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         update_subscription_status(telegram_chat_id, payment_reference, "inactive")
 
         # Remove user from the group
+        # Remove user from the group
         await bot_instance.ban_chat_member(
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
@@ -160,10 +161,11 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
         # Delete the message announcing the removal
         try:
             # Extract message ID from the update object
-            message_id = context.update.message.message_id
-            await bot_instance.delete_message(
-                chat_id=TELEGRAM_GROUP_ID, message_id=message_id
-            )
+            if 'message' in context.update:
+                message_id = context.update['message']['message_id']
+                await bot_instance.delete_message(
+                    chat_id=TELEGRAM_GROUP_ID, message_id=message_id
+                )
         except Exception as e:
             logging.error(f"Error deleting message: {e}")
 
