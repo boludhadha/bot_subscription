@@ -1,17 +1,15 @@
 from telegram import Bot
-from io import BytesIO
 import hmac
 import hashlib
 import datetime
 import asyncio
 import logging
 import os
-import pytz
 import requests
 from logging import StreamHandler
 from flask import Flask, request, Request, abort
 from dotenv import load_dotenv
-from db import add_subscription, update_payment_session_status, get_connection
+from db import add_subscription, update_payment_session_status
 
 load_dotenv()
 
@@ -36,6 +34,7 @@ logger.setLevel(logging.INFO)
 
 bot_instance = Bot(token=BOT_TOKEN)
 
+
 def calculate_end_date(subscription_type):
     current_date = datetime.datetime.now()
     if subscription_type == "15 Minutes":
@@ -46,6 +45,7 @@ def calculate_end_date(subscription_type):
         return current_date + datetime.timedelta(minutes=60)
     return None
 
+
 async def send_notification(bot, telegram_chat_id, message):
     try:
         await bot.send_message(chat_id=telegram_chat_id, text=message)
@@ -53,12 +53,37 @@ async def send_notification(bot, telegram_chat_id, message):
     except Exception as e:
         logger.error(f"Error sending notification: {e}")
 
+
 async def unban_user(bot, chat_id, user_id):
     try:
         await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
         logger.info(f"User {user_id} unbanned in chat {chat_id}")
     except Exception as e:
         logger.error(f"Error unbanning user: {e}")
+
+
+def initiate_payment(
+    amount, email, reference, telegram_chat_id, subscription_type, username
+):
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
+        "email": email,
+        "reference": reference,
+        "metadata": {
+            "telegram_chat_id": telegram_chat_id,
+            "payment_reference": reference,
+            "subscription_type": subscription_type,
+            "username": username,
+        },
+    }
+    response = requests.post(url, json=data, headers=headers)
+    return response.json()
+
 
 def verify_payment(payment_reference):
     url = f"https://api.paystack.co/transaction/verify/{payment_reference}"
@@ -70,9 +95,8 @@ def verify_payment(payment_reference):
     logger.info(f"Payment verification response: {response.json()}")
     return response.json()
 
-async def create_temporary_invite_link(
-    bot, chat_id, minutes_expire=30, member_limit=1
-):
+
+async def create_temporary_invite_link(bot, chat_id, minutes_expire=30, member_limit=1):
     try:
         expire_date = datetime.datetime.now() + datetime.timedelta(
             minutes=minutes_expire
@@ -86,6 +110,7 @@ async def create_temporary_invite_link(
         logger.error(f"Error creating invite link: {e}")
         return None
 
+
 def verify_paystack_webhook(request_body, signature):
     hash = hmac.new(
         PAYSTACK_SECRET_KEY.encode(), request_body, hashlib.sha512
@@ -93,6 +118,7 @@ def verify_paystack_webhook(request_body, signature):
     is_valid = hash == signature
     logger.info(f"Webhook verification: {'success' if is_valid else 'failure'}")
     return is_valid
+
 
 @app.route("/webhook/paystack", methods=["POST"])
 def paystack_webhook():
@@ -124,7 +150,9 @@ def paystack_webhook():
                 payment_verification = verify_payment(payment_reference)
                 if payment_verification.get("status"):
                     update_payment_session_status(payment_reference, "success")
-                    logger.info(f"Payment session updated for reference: {payment_reference}")
+                    logger.info(
+                        f"Payment session updated for reference: {payment_reference}"
+                    )
 
                     # Add subscription to database
                     add_subscription(
@@ -147,11 +175,7 @@ def paystack_webhook():
                     amount_in_naira = amount // 100
 
                     loop.run_until_complete(
-                        unban_user(
-                            bot_instance,
-                            TELEGRAM_GROUP_ID,
-                            telegram_chat_id
-                        )
+                        unban_user(bot_instance, TELEGRAM_GROUP_ID, telegram_chat_id)
                     )
 
                     # Notification with invite link
@@ -174,6 +198,7 @@ def paystack_webhook():
     except Exception as e:
         logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=4000)

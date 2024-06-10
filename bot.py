@@ -40,9 +40,9 @@ TELEGRAM_GROUP_ID = os.getenv("TELEGRAM_GROUP_ID")
 PORT = int(os.environ.get("PORT", "8443"))
 
 subscription_plans = {
-    "15 Minutes": {"duration": datetime.timedelta(minutes=15), "price": 15000},
-    "30 Minutes": {"duration": datetime.timedelta(minutes=30), "price": 25000},
-    "1 Hour": {"duration": datetime.timedelta(minutes=60), "price": 95000},
+    "15 Minutes": {"price": 15000},
+    "30 Minutes": {"price": 25000},
+    "1 Hour": {"price": 95000},
 }
 
 bot_instance = Bot(token=BOT_TOKEN)
@@ -53,29 +53,6 @@ def generate_unique_reference():
     if len(reference) > 100:
         reference = reference[:100]
     return reference
-
-
-def initiate_payment(
-    amount, email, reference, telegram_chat_id, subscription_type, username
-):
-    url = "https://api.paystack.co/transaction/initialize"
-    headers = {
-        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-        "Content-Type": "application/json",
-    }
-    data = {
-        "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
-        "email": email,
-        "reference": reference,
-        "metadata": {
-            "telegram_chat_id": telegram_chat_id,
-            "payment_reference": reference,
-            "subscription_type": subscription_type,
-            "username": username,
-        },
-    }
-    response = requests.post(url, json=data, headers=headers)
-    return response.json()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -128,12 +105,14 @@ async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Choose a subscription plan:", reply_markup=reply_markup
     )
 
+
 def expiry_formatting(day):
     if 10 <= day % 100 <= 20:
-        suffix = 'th'
+        suffix = "th"
     else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return str(day) + suffix
+
 
 async def check_subscription_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     subscription = get_user_subscription(update.effective_chat.id)
@@ -145,12 +124,16 @@ async def check_subscription_status(update: Update, context: ContextTypes.DEFAUL
         expiry_date = datetime.datetime.fromisoformat(str(subscription["end_date"]))
         expiry_date = expiry_date.astimezone(pytz.timezone("Africa/Lagos"))
         day_with_suffix = expiry_formatting(expiry_date.day)
-        formatted_expiry_date = expiry_date.strftime(f"{day_with_suffix} %B, %Y at %-I:%M%p")
-        formatted_expiry_date = formatted_expiry_date[:len(day_with_suffix) + 1].lower() + formatted_expiry_date[len(day_with_suffix) + 1:]
+        formatted_expiry_date = expiry_date.strftime(
+            f"{day_with_suffix} %B, %Y at %-I:%M%p"
+        )
+        formatted_expiry_date = (
+            formatted_expiry_date[: len(day_with_suffix) + 1].lower()
+            + formatted_expiry_date[len(day_with_suffix) + 1 :]
+        )
         await update.message.reply_text(
             f"Your subscription expires on: {formatted_expiry_date}"
         )
-
 
 
 async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):

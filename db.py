@@ -39,7 +39,7 @@ def create_tables():
                 start_date TIMESTAMP,
                 end_date TIMESTAMP,
                 payment_reference TEXT,
-                group_id TEXT
+                group_id TEXT,
                 status TEXT
             )
         """
@@ -174,6 +174,7 @@ def update_subscription_status(chat_id):
         UPDATE subscriptions
         SET status = 'inactive'
         WHERE telegram_chat_id = %s
+        AND status = 'active'
     """,
         (chat_id),
     )

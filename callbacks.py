@@ -8,6 +8,7 @@ from telegram import (
 from telegram.ext import (
     ContextTypes,
 )
+from webhook_server import initiate_payment
 from db import (
     add_payment_session,
     update_payment_session_status,
@@ -16,7 +17,6 @@ from bot import (
     TELEGRAM_GROUP_ID,
     subscription_plans,
     generate_unique_reference,
-    initiate_payment,
 )
 
 
@@ -65,9 +65,9 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         telegram_chat_id = query.from_user.id
         amount = subscription_details["price"]
         subscription_type = selected_plan
-        bot_instance.unban_chat_member(
+        """ bot_instance.unban_chat_member(
             TELEGRAM_GROUP_ID, update.effective_message.chat_id, only_if_banned=True
-        )
+        ) """
 
         payment_response = initiate_payment(
             amount, email, reference, telegram_chat_id, subscription_type, username
