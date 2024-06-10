@@ -34,6 +34,7 @@ async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT
     query = update.callback_query
     await query.answer()
     selected_gateway = query.data
+    context.user_data["payment_gateway"] = selected_gateway  # Store payment gateway in context
     logging.info(f"Selected payment gateway: {selected_gateway}")
     
     # Display subscription plans
@@ -47,11 +48,13 @@ async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT
         text="Choose a subscription plan:", reply_markup=reply_markup
     )
 
-async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE, payment_gateway: str):
+
+async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     selected_plan = query.data
     logging.info(f"Selected plan: {selected_plan}")
+    payment_gateway = context.user_data.get("payment_gateway")  # Retrieve payment gateway from context
     if selected_plan in subscription_plans:
         subscription_details = subscription_plans[selected_plan]
         username = query.from_user.username
