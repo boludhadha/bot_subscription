@@ -88,7 +88,6 @@ async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT
     await query.edit_message_text(
         text="Choose a subscription plan:", reply_markup=reply_markup
     )
-
 async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -111,12 +110,9 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
     )
 
-    chat_id = query.message.chat.id
-    user_data = context.user_data
-    payment_gateway = user_data.get('payment_gateway', 'flutterwave')
+    payment_gateway = context.user_data.get('payment_gateway', 'flutterwave')
 
     payment_link = initiate_payment(
-        user_id=chat_id,
         amount=subscription_price,
         payment_reference=unique_reference,
         payment_gateway=payment_gateway,
@@ -127,7 +123,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=f"Click the link to complete the payment: {payment_link}",
             reply_markup=reply_markup,
         )
-        add_payment_session(chat_id, unique_reference, selected_plan, subscription_price)
+        add_payment_session(query.message.chat.id, unique_reference, selected_plan, subscription_price)
     else:
         await query.edit_message_text(
             text="Failed to initiate payment. Please try again later."
