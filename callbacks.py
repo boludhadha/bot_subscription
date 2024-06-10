@@ -110,11 +110,23 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup,
     )
 
-    payment_gateway = context.user_data.get('payment_gateway', 'flutterwave')
+    chat_id = query.message.chat.id
+    user_data = context.user_data
+    payment_gateway = user_data.get('payment_gateway', 'flutterwave')
+    username = user_data.get('username')  # Adjust this based on how you store the username
 
+    # Here, adjust email and telegram_chat_id based on your application logic
+    email = "example@example.com"
+    telegram_chat_id = chat_id
+
+    # Call initiate_payment with the required arguments
     payment_link = initiate_payment(
         amount=subscription_price,
-        payment_reference=unique_reference,
+        email=email,
+        reference=unique_reference,
+        telegram_chat_id=telegram_chat_id,
+        subscription_type=selected_plan,
+        username=username,
         payment_gateway=payment_gateway,
     )
 
@@ -123,7 +135,7 @@ async def select_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=f"Click the link to complete the payment: {payment_link}",
             reply_markup=reply_markup,
         )
-        add_payment_session(query.message.chat.id, unique_reference, selected_plan, subscription_price)
+        add_payment_session(chat_id, unique_reference, selected_plan, subscription_price)
     else:
         await query.edit_message_text(
             text="Failed to initiate payment. Please try again later."
