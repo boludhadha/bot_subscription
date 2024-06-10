@@ -96,26 +96,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="You selected an option. Please use /plans to see subscription plans or other options.",
         )
 
-async def handle_gateway_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    user_data = context.user_data
-
-    if query.data == "gateway_flutterwave":
-        user_data['payment_gateway'] = 'flutterwave'
-    elif query.data == "gateway_paystack":
-        user_data['payment_gateway'] = 'paystack'
-
-    keyboard = [
-        [InlineKeyboardButton("15 minutes: 15,000 NGN", callback_data="15 Minutes")],
-        [InlineKeyboardButton("30 minutes: 25,000 NGN", callback_data="30 Minutes")],
-        [InlineKeyboardButton("1 Hour: 95,000 NGN", callback_data="1 Hour")],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text(
-        text="Choose a subscription plan:", reply_markup=reply_markup
-    )
-
 async def plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
