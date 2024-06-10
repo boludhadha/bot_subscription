@@ -10,6 +10,8 @@ from telegram import (
     InlineKeyboardMarkup,
     Bot,
     ReplyKeyboardMarkup,
+    ChatMemberUpdated,
+    Chat
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -18,6 +20,7 @@ from telegram.ext import (
     CallbackQueryHandler,
     MessageHandler,
     filters,
+    CallbackContext,
 )
 from db import (
     create_tables,
@@ -157,7 +160,21 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             chat_id=TELEGRAM_GROUP_ID, user_id=telegram_chat_id
         )
 
-        await delete_recent_user_messages(telegram_chat_id)
+        # Instead of calling delete_left_message with the telegram_chat_id,
+        # we create a mock Update object
+        mock_update = Update(
+            update_id=0,
+            my_chat_member=ChatMemberUpdated(
+                chat=Chat(id=TELEGRAM_GROUP_ID, type='group'),
+                from_user=None,
+                date=datetime.datetime.now(),
+                old_chat_member=None,
+                new_chat_member=None,
+            )
+        )
+        mock_context = CallbackContext.from_update(mock_update, application=context.application)
+
+        await delete_left_message(mock_update, mock_context)
 
         try:
             keyboard = [
@@ -182,15 +199,16 @@ async def check_subscription_expiry(context: ContextTypes.DEFAULT_TYPE):
             )
 
 
-async def delete_recent_user_messages(chat_id: int):
-    # Get recent messages sent by the user in the group
-    messages = await bot_instance.get_chat_history(chat_id)
-    for message in messages:
-        if message.from_user.id == chat_id:
-            # Delete the message
-            await bot_instance.delete_message(
-                chat_id=chat_id, message_id=message.message_id
-            )
+async def delete_left_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Delete messages indicating a user was removed."""
+    message = update.message
+
+    if message and message.left_chat_member:
+        try:
+            await context.bot.delete_message(chat_id=message.chat_id, message_id=message.message_id)
+            logging.info(f"Deleted left message in chat {message.chat_id}")
+        except Exception as e:
+            logging.error(f"Error deleting message: {e}")
 
 
 if __name__ == "__main__":
