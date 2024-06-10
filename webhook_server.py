@@ -63,7 +63,6 @@ async def unban_user(bot, chat_id, user_id):
     except Exception as e:
         logger.error(f"Error unbanning user: {e}")
 
-
 def initiate_payment(
     amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
 ):
@@ -72,14 +71,13 @@ def initiate_payment(
         headers = {
             "Authorization": f"Bearer {FLW_SECRET_KEY}",
             "Content-Type": "application/json",
-
         }
         data = {
             "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
             "customer": email,
             "currency": "NGN",
             "tx_ref": reference,
-            "redirect_url":"https://t.me/PayPipsBot",
+            "redirect_url": "https://t.me/PayPipsBot",
             "metadata": {
                 "telegram_chat_id": telegram_chat_id,
                 "payment_reference": reference,
@@ -87,6 +85,7 @@ def initiate_payment(
                 "username": username,
             },
         }
+        response = requests.post(url, json=data, headers=headers)
     elif payment_gateway == 'paystack':
         url = "https://api.paystack.co/transaction/initialize"
         headers = {
@@ -104,8 +103,7 @@ def initiate_payment(
                 "username": username,
             },
         }
-
-    response = request.post(url, json=data, headers=headers)
+        response = requests.post(url, json=data, headers=headers)
     return response.json()
 
 
