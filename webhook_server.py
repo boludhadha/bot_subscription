@@ -64,53 +64,26 @@ async def unban_user(bot, chat_id, user_id):
         logger.error(f"Error unbanning user: {e}")
 
 def initiate_payment(
-    amount, email, reference, telegram_chat_id, subscription_type, username, payment_gateway
+    amount, email, reference, telegram_chat_id, subscription_type, username
 ):
-    try:
-        if payment_gateway == 'flutterwave':
-            url = "https://api.flutterwave.com/v3/payments"
-            headers = {
-                "Authorization": f"Bearer {FLW_SECRET_KEY}",
-                "Content-Type": "application/json",
-            }
-            data = {
-                "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
-                "customer": email,
-                "currency": "NGN",
-                "tx_ref": reference,
-                "redirect_url": "https://t.me/PayPipsBot",
-                "metadata": {
-                    "telegram_chat_id": telegram_chat_id,
-                    "payment_reference": reference,
-                    "subscription_type": subscription_type,
-                    "username": username,
-                },
-            }
-            response = requests.post(url, json=data, headers=headers)
-        elif payment_gateway == 'paystack':
-            url = "https://api.paystack.co/transaction/initialize"
-            headers = {
-                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-                "Content-Type": "application/json",
-            }
-            data = {
-                "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
-                "email": email,
-                "reference": reference,
-                "metadata": {
-                    "telegram_chat_id": telegram_chat_id,
-                    "payment_reference": reference,
-                    "subscription_type": subscription_type,
-                    "username": username,
-                },
-            }
-            response = requests.post(url, json=data, headers=headers)
-        
-        return response.json()  # Return the response if no exception occurs
-    except Exception as e:
-        logger.error(f"Error during payment initiation: {e}")
-        return {"error": "An error occurred during payment initiation"}  # Return an error response
-
+    url = "https://api.paystack.co/transaction/initialize"
+    headers = {
+        "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "amount": amount * 100,  # Paystack expects the amount in kobo (NGN)
+        "email": email,
+        "reference": reference,
+        "metadata": {
+            "telegram_chat_id": telegram_chat_id,
+            "payment_reference": reference,
+            "subscription_type": subscription_type,
+            "username": username,
+        },
+    }
+    response = requests.post(url, json=data, headers=headers)
+    return response.json()
     
 
 def verify_payment(payment_reference, payment_gateway):
