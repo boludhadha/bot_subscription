@@ -164,7 +164,7 @@ def paystack_webhook():
                         payment_reference=payment_reference,
                         group_id=TELEGRAM_GROUP_ID,
                     )
-                    logger.info(f"Subscription added for user {username}")
+                    logger.info(f"Subscription added to database for user {username}")
 
                     # Create temporary invite link
                     loop = asyncio.get_event_loop()
@@ -198,3 +198,7 @@ def paystack_webhook():
     except Exception as e:
         logger.error(f"Error processing Paystack webhook: {e}")
         return "An error occurred", 500
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=4000)

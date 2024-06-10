@@ -63,40 +63,23 @@ def add_subscription(
 ):
     conn = get_connection()
     cursor = conn.cursor()
-    try:
-        # Deactivate existing active subscriptions
-        cursor.execute(
-            """
-            UPDATE subscriptions
-            SET status = 'inactive'
-            WHERE telegram_chat_id = %s AND status = 'active'
-            """,
-            (chat_id,)
-        )
-        conn.commit()
-
-        # Insert the new subscription
-        cursor.execute(
-            """
-            INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'active')
-            """,
-            (
-                chat_id,
-                username,
-                subscription_type,
-                start_date,
-                end_date,
-                payment_reference,
-                group_id,
-            ),
-        )
-        conn.commit()
-        logging.info(f"Subscription added successfully for user {chat_id}")
-    except Exception as e:
-        logging.error(f"Error adding subscription: {e}")
-    finally:
-        conn.close()
+    cursor.execute(
+        """
+        INSERT INTO subscriptions (telegram_chat_id, username, subscription_type, start_date, end_date, payment_reference, group_id, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'active')
+    """,
+        (
+            chat_id,
+            username,
+            subscription_type,
+            start_date,
+            end_date,
+            payment_reference,
+            group_id,
+        ),
+    )
+    conn.commit()
+    conn.close()
 
 
 def add_payment_session(user_id, payment_reference, status="pending"):
@@ -177,3 +160,17 @@ def get_expired_subscriptions():
     return expired_subscriptions
 
 
+def update_subscription_status(chat_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE subscriptions
+        SET status = 'inactive'
+        WHERE telegram_chat_id = %s
+        AND status = 'active'
+    """,
+        (chat_id,),
+    )
+    conn.commit()
+    conn.close()
