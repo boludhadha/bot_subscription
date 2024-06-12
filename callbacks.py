@@ -11,7 +11,7 @@ async def cancel_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     try:
-        logging.info(f"Cancel button clicked with callback data: {query.data}")
+        logging.info(f"Canceled button clicked with callback data: {query.data}")
 
         if "|" in query.data:
             action, reference = query.data.split("|", 1)
